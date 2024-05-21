@@ -5,6 +5,10 @@
 //!
 //! The library is aimed at ease-of-use and performance first.
 //!
+//! We lift the concept of "values" into types using `typenum`. This allows for all
+//! limitations assosciated with const generics to not restrict possible use-cases, and scope
+//! of implementation.
+//!
 //! ```
 //! use fugit::{Duration, ExtU32};
 //!
@@ -54,6 +58,7 @@ pub use aliases::*;
 pub use duration::{Duration, ExtU32, ExtU32Ceil, ExtU64, ExtU64Ceil};
 pub use instant::Instant;
 pub use rate::{ExtU32 as RateExtU32, ExtU64 as RateExtU64, Rate};
+pub use typenum;
 
 #[cfg(test)]
 mod test {
