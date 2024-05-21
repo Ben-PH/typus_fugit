@@ -1,6 +1,6 @@
-use typenum::{NonZero, Unsigned};
+use typenum::{NonZero, Unsigned, U1, U1000, U1000000};
 
-use crate::helpers::{self, Helpers};
+use crate::helpers::Helpers;
 use crate::Duration;
 use core::cmp::Ordering;
 use core::convert;
@@ -25,7 +25,7 @@ macro_rules! impl_rate_for_integer {
             ///
             /// ```
             /// # use fugit::*;
-            #[doc = concat!("let _d = Rate::<", stringify!($i), ", 1, 1_000>::from_raw(1);")]
+            #[doc = concat!("let _d = Rate::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_raw(1);")]
             /// ```
             #[inline]
             pub const fn from_raw(raw: $i) -> Self {
@@ -36,7 +36,7 @@ macro_rules! impl_rate_for_integer {
             ///
             /// ```
             /// # use fugit::*;
-            #[doc = concat!("let d = Rate::<", stringify!($i), ", 1, 1_000>::from_raw(234);")]
+            #[doc = concat!("let d = Rate::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_raw(234);")]
             ///
             /// assert_eq!(d.raw(), 234);
             /// ```
@@ -49,9 +49,9 @@ macro_rules! impl_rate_for_integer {
             ///
             /// ```
             /// # use fugit::*;
-            #[doc = concat!("let r1 = Rate::<", stringify!($i), ", 1, 1_000>::from_raw(1);")]
-            #[doc = concat!("let r2 = Rate::<", stringify!($i), ", 1, 1_000>::from_raw(2);")]
-            #[doc = concat!("let r3 = Rate::<", stringify!($i), ", 1, 1_000>::from_raw(", stringify!($i), "::MAX);")]
+            #[doc = concat!("let r1 = Rate::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_raw(1);")]
+            #[doc = concat!("let r2 = Rate::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_raw(2);")]
+            #[doc = concat!("let r3 = Rate::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_raw(", stringify!($i), "::MAX);")]
             ///
             /// assert_eq!(r1.checked_add(r2).unwrap().raw(), 3);
             /// assert_eq!(r1.checked_add(r3), None);
@@ -88,9 +88,9 @@ macro_rules! impl_rate_for_integer {
             ///
             /// ```
             /// # use fugit::*;
-            #[doc = concat!("let r1 = Rate::<", stringify!($i), ", 1, 1_000>::from_raw(1);")]
-            #[doc = concat!("let r2 = Rate::<", stringify!($i), ", 1, 1_000>::from_raw(2);")]
-            #[doc = concat!("let r3 = Rate::<", stringify!($i), ", 1, 1_000>::from_raw(", stringify!($i), "::MAX);")]
+            #[doc = concat!("let r1 = Rate::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_raw(1);")]
+            #[doc = concat!("let r2 = Rate::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_raw(2);")]
+            #[doc = concat!("let r3 = Rate::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_raw(", stringify!($i), "::MAX);")]
             ///
             /// assert_eq!(r2.checked_sub(r1).unwrap().raw(), 1);
             /// assert_eq!(r1.checked_sub(r3), None);
@@ -139,8 +139,8 @@ macro_rules! impl_rate_for_integer {
             ///
             /// ```
             /// # use fugit::*;
-            #[doc = concat!("let r1 = Rate::<", stringify!($i), ", 1, 1_00>::from_raw(1);")]
-            #[doc = concat!("let r2 = Rate::<", stringify!($i), ", 1, 1_000>::from_raw(1);")]
+            #[doc = concat!("let r1 = Rate::<", stringify!($i), ", typenum::U1, typenum::U100>::from_raw(1);")]
+            #[doc = concat!("let r2 = Rate::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_raw(1);")]
             ///
             /// assert_eq!(r1.const_partial_cmp(r2), Some(core::cmp::Ordering::Greater));
             /// ```
@@ -172,8 +172,8 @@ macro_rules! impl_rate_for_integer {
             ///
             /// ```
             /// # use fugit::*;
-            #[doc = concat!("let r1 = Rate::<", stringify!($i), ", 1, 1_00>::from_raw(1);")]
-            #[doc = concat!("let r2 = Rate::<", stringify!($i), ", 1, 1_000>::from_raw(10);")]
+            #[doc = concat!("let r1 = Rate::<", stringify!($i), ", typenum::U1, typenum::U100>::from_raw(1);")]
+            #[doc = concat!("let r2 = Rate::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_raw(10);")]
             ///
             /// assert!(r1.const_eq(r2));
             /// ```
@@ -205,8 +205,8 @@ macro_rules! impl_rate_for_integer {
             ///
             /// ```
             /// # use fugit::*;
-            #[doc = concat!("let r1 = Rate::<", stringify!($i), ", 1, 1_00>::from_raw(1);")]
-            #[doc = concat!("let r2 = Rate::<", stringify!($i), ", 1, 1_000>::const_try_from(r1);")]
+            #[doc = concat!("let r1 = Rate::<", stringify!($i), ", typenum::U1, typenum::U100>::from_raw(1);")]
+            #[doc = concat!("let r2 = Rate::<", stringify!($i), ", typenum::U1, typenum::U1000>::const_try_from(r1);")]
             ///
             /// assert_eq!(r2.unwrap().raw(), 10);
             /// ```
@@ -236,8 +236,8 @@ macro_rules! impl_rate_for_integer {
             ///
             /// ```
             /// # use fugit::*;
-            #[doc = concat!("let r1 = Rate::<", stringify!($i), ", 1, 1_00>::from_raw(1);")]
-            #[doc = concat!("let r2: Option<Rate::<", stringify!($i), ", 1, 1_000>> = r1.const_try_into();")]
+            #[doc = concat!("let r1 = Rate::<", stringify!($i), ", typenum::U1, typenum::U100>::from_raw(1);")]
+            #[doc = concat!("let r2: Option<Rate::<", stringify!($i), ", typenum::U1, typenum::U1000>> = r1.const_try_into();")]
             ///
             /// assert_eq!(r2.unwrap().raw(), 10);
             /// ```
@@ -252,8 +252,8 @@ macro_rules! impl_rate_for_integer {
             ///
             /// ```
             /// # use fugit::*;
-            #[doc = concat!("let r1 = Rate::<", stringify!($i), ", 1, 1>::from_raw(1);")]
-            #[doc = concat!("let d1: Option<Duration::<", stringify!($i), ", 1, 1_000>> = r1.try_into_duration();")]
+            #[doc = concat!("let r1 = Rate::<", stringify!($i), ", typenum::U1, typenum::U1>::from_raw(1);")]
+            #[doc = concat!("let d1: Option<Duration::<", stringify!($i), ", typenum::U1, typenum::U1000>> = r1.try_into_duration();")]
             ///
             /// assert_eq!(d1.unwrap().ticks(), 1_000);
             /// ```
@@ -278,8 +278,8 @@ macro_rules! impl_rate_for_integer {
             ///
             /// ```
             /// # use fugit::*;
-            #[doc = concat!("let d1 = Duration::<", stringify!($i), ", 1, 1_000>::from_ticks(2);")]
-            #[doc = concat!("let r1 = Rate::<", stringify!($i), ", 1, 1>::try_from_duration(d1);")]
+            #[doc = concat!("let d1 = Duration::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(2);")]
+            #[doc = concat!("let r1 = Rate::<", stringify!($i), ", typenum::U1, typenum::U1>::try_from_duration(d1);")]
             ///
             /// assert_eq!(r1.unwrap().raw(), 500);
             /// ```
@@ -315,8 +315,8 @@ macro_rules! impl_rate_for_integer {
             ///
             /// ```
             /// # use fugit::*;
-            #[doc = concat!("let r1 = Rate::<", stringify!($i), ", 1, 100>::from_raw(1);")]
-            #[doc = concat!("let r2: Rate::<", stringify!($i), ", 1, 1_000> = r1.convert();")]
+            #[doc = concat!("let r1 = Rate::<", stringify!($i), ", typenum::U1, typenum::U100>::from_raw(1);")]
+            #[doc = concat!("let r2: Rate::<", stringify!($i), ", typenum::U1, typenum::U1000> = r1.convert();")]
             ///
             /// assert_eq!(r2.raw(), 10);
             /// ```
@@ -326,9 +326,9 @@ macro_rules! impl_rate_for_integer {
             /// ```compile_fail
             /// # use fugit::*;
             #[doc = concat!("const RAW: ", stringify!($i), "= ", stringify!($i), "::MAX - 10;")]
-            #[doc = concat!("const R1: Rate::<", stringify!($i), ", 1, 100> = Rate::<", stringify!($i), ", 1, 100>::from_raw(RAW);")]
+            #[doc = concat!("const R1: Rate::<", stringify!($i), ", typenum::U1, typenum::U100> = Rate::<", stringify!($i), ", 1, 100>::from_raw(RAW);")]
             /// // Fails conversion due to overflow
-            #[doc = concat!("const R2: Rate::<", stringify!($i), ", 1, 200> = R1.convert();")]
+            #[doc = concat!("const R2: Rate::<", stringify!($i), ", typenum::U1, typenum::U200> = R1.convert();")]
             /// ```
             pub const fn convert<ONumer: Unsigned, ODenom:Unsigned + NonZero>(
                 self,
@@ -344,24 +344,24 @@ macro_rules! impl_rate_for_integer {
             #[inline]
             #[allow(non_snake_case)]
             pub const fn to_Hz(&self) -> $i {
-                    (Helpers::<1, 1, Numer, Denom>::LD_TIMES_RN as $i * self.raw)
-                        / Helpers::<1, 1, Numer, Denom>::RD_TIMES_LN as $i
+                    (Helpers::<U1, U1, Numer, Denom>::LD_TIMES_RN as $i * self.raw)
+                        / Helpers::<U1, U1, Numer, Denom>::RD_TIMES_LN as $i
             }
 
             /// Convert the Rate to an interger number of kHz.
             #[inline]
             #[allow(non_snake_case)]
             pub const fn to_kHz(&self) -> $i {
-                    (Helpers::<1_000, 1, Numer, Denom>::LD_TIMES_RN as $i * self.raw)
-                        / Helpers::<1_000, 1, Numer, Denom>::RD_TIMES_LN as $i
+                    (Helpers::<U1000, U1, Numer, Denom>::LD_TIMES_RN as $i * self.raw)
+                        / Helpers::<U1000, U1, Numer, Denom>::RD_TIMES_LN as $i
             }
 
             /// Convert the Rate to an interger number of MHz.
             #[inline]
             #[allow(non_snake_case)]
             pub const fn to_MHz(&self) -> $i {
-                    (Helpers::<1_000_000, 1, Numer, Denom>::LD_TIMES_RN as $i * self.raw)
-                        / Helpers::<1_000_000, 1, Numer, Denom>::RD_TIMES_LN as $i
+                    (Helpers::<U1000000, U1, Numer, Denom>::LD_TIMES_RN as $i * self.raw)
+                        / Helpers::<U1000000, U1, Numer, Denom>::RD_TIMES_LN as $i
             }
 
             /// Shorthand for creating a rate which represents hertz.
@@ -369,8 +369,8 @@ macro_rules! impl_rate_for_integer {
             #[allow(non_snake_case)]
             pub const fn Hz(val: $i) -> Self {
                 Self::from_raw(
-                    (Helpers::<1, 1, Numer, Denom>::RD_TIMES_LN as $i * val)
-                        / Helpers::<1, 1, Numer, Denom>::LD_TIMES_RN as $i,
+                    (Helpers::<U1, U1, Numer, Denom>::RD_TIMES_LN as $i * val)
+                        / Helpers::<U1, U1, Numer, Denom>::LD_TIMES_RN as $i,
                 )
             }
 
@@ -379,8 +379,8 @@ macro_rules! impl_rate_for_integer {
             #[allow(non_snake_case)]
             pub const fn kHz(val: $i) -> Self {
                 Self::from_raw(
-                    (Helpers::<1_000, 1, Numer, Denom>::RD_TIMES_LN as $i * val)
-                        / Helpers::<1_000, 1, Numer, Denom>::LD_TIMES_RN as $i,
+                    (Helpers::<U1000, U1, Numer, Denom>::RD_TIMES_LN as $i * val)
+                        / Helpers::<U1000, U1, Numer, Denom>::LD_TIMES_RN as $i,
                 )
             }
 
@@ -389,27 +389,27 @@ macro_rules! impl_rate_for_integer {
             #[allow(non_snake_case)]
             pub const fn MHz(val: $i) -> Self {
                 Self::from_raw(
-                    (Helpers::<1_000_000, 1, Numer, Denom>::RD_TIMES_LN as $i * val)
-                        / Helpers::<1_000_000, 1, Numer, Denom>::LD_TIMES_RN as $i,
+                    (Helpers::<U1000000, U1, Numer, Denom>::RD_TIMES_LN as $i * val)
+                        / Helpers::<U1000000, U1, Numer, Denom>::LD_TIMES_RN as $i,
                 )
             }
 
             /// Shorthand for creating a rate which represents nanoseconds.
             #[inline]
             pub const fn nanos(val: $i) -> Self {
-                Self::from_duration(crate::Duration::<$i, 1, 1_000_000_000>::from_ticks(val))
+                Self::from_duration(crate::aliases::NanosDuration::<$i>::from_ticks(val))
             }
 
             /// Shorthand for creating a rate which represents microseconds.
             #[inline]
             pub const fn micros(val: $i) -> Self {
-                Self::from_duration(crate::Duration::<$i, 1, 1_000_000>::from_ticks(val))
+                Self::from_duration(crate::aliases::MicrosDuration::<$i>::from_ticks(val))
             }
 
             /// Shorthand for creating a rate which represents milliseconds.
             #[inline]
             pub const fn millis(val: $i) -> Self {
-                Self::from_duration(crate::Duration::<$i, 1, 1_000>::from_ticks(val))
+                Self::from_duration(crate::aliases::MillisDuration::<$i>::from_ticks(val))
             }
         }
 
@@ -554,16 +554,16 @@ macro_rules! impl_rate_for_integer {
         impl<Numer: Unsigned, Denom:Unsigned + NonZero> defmt::Format for Rate<$i, Numer, Denom>
         {
             fn format(&self, f: defmt::Formatter) {
-                if Numer == 1 && Denom == 1 {
+                if Numer::U64 == 1 && Denom::U64 == 1 {
                     defmt::write!(f, "{} Hz", self.raw)
-                } else if Numer == 1_000 && Denom == 1 {
+                } else if Numer::U64 == 1_000 && Denom::U64 == 1 {
                     defmt::write!(f, "{} kHz", self.raw)
-                } else if Numer == 1_000_000 && Denom == 1 {
+                } else if Numer::U64 == 1_000_000 && Denom::U64 == 1 {
                     defmt::write!(f, "{} MHz", self.raw)
-                } else if Numer == 1_000_000_000 && Denom == 1 {
+                } else if Numer::U64 == 1_000_000_000 && Denom::U64 == 1 {
                     defmt::write!(f, "{} GHz", self.raw)
                 } else {
-                    defmt::write!(f, "{} raw @ ({}/{})", self.raw, Numer, Denom)
+                    defmt::write!(f, "{} raw @ ({}/{})", self.raw, Numer::U64, Denom::U64)
                 }
             }
         }
