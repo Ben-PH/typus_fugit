@@ -1,3 +1,7 @@
+use core::marker::PhantomData;
+
+use typenum::{NonZero, Unsigned};
+
 /// Needed due to not being allowed to call const-fn in `PartialEq` fo some reasion
 /// get the error:
 ///
@@ -13,30 +17,44 @@
 ///
 /// For more information about this error, try `rustc --explain E0401`
 /// ```
-pub struct Helpers<const L_NOM: u32, const L_DENOM: u32, const R_NOM: u32, const R_DENOM: u32>;
+pub struct Helpers<LNumer, LDenom, RNumer, RDenom>
+where
+    LNumer: Unsigned,
+    LDenom: Unsigned + NonZero,
+    RNumer: Unsigned,
+    RDenom: Unsigned + NonZero,
+{
+    l_numer: PhantomData<LNumer>,
+    r_numer: PhantomData<RNumer>,
+    l_denom: PhantomData<LDenom>,
+    r_denom: PhantomData<RDenom>,
+}
 
-impl<const L_NOM: u32, const L_DENOM: u32, const R_NOM: u32, const R_DENOM: u32>
-    Helpers<L_NOM, L_DENOM, R_NOM, R_DENOM>
+impl<LNumer, LDenom, RNumer, RDenom> Helpers<LNumer, LDenom, RNumer, RDenom>
+where
+    LNumer: Unsigned,
+    LDenom: Unsigned + NonZero,
+    RNumer: Unsigned,
+    RDenom: Unsigned + NonZero,
 {
     /// Helper constants generated at compile time
-    pub const DIVISOR: u64 =
-        gcd::binary_u64(L_DENOM as u64 * R_NOM as u64, R_DENOM as u64 * L_NOM as u64);
+    pub const DIVISOR: u64 = gcd::binary_u64(LDenom::U64 * RNumer::U64, RDenom::U64 * LNumer::U64);
 
     /// Helper constants generated at compile time
     pub const DIVISOR_2: u64 =
-        gcd::binary_u64(L_NOM as u64 * R_NOM as u64, R_DENOM as u64 * L_DENOM as u64);
+        gcd::binary_u64(LNumer::U64 * RNumer::U64, RDenom::U64 * LDenom::U64);
 
     /// Helper constants generated at compile time for Durations
-    pub const RD_TIMES_LN: u64 = (R_DENOM as u64 * L_NOM as u64) / Self::DIVISOR;
+    pub const RD_TIMES_LN: u64 = (RDenom::U64 * LNumer::U64) / Self::DIVISOR;
 
     /// Helper constants generated at compile time
-    pub const LD_TIMES_RN: u64 = (L_DENOM as u64 * R_NOM as u64) / Self::DIVISOR;
+    pub const LD_TIMES_RN: u64 = (LDenom::U64 * RNumer::U64) / Self::DIVISOR;
 
     /// Helper constants generated at compile time for Rates
-    pub const LN_TIMES_RN: u64 = (L_NOM as u64 * R_NOM as u64) / Self::DIVISOR_2;
+    pub const LN_TIMES_RN: u64 = (LNumer::U64 * RNumer::U64) / Self::DIVISOR_2;
 
     /// Helper constants generated at compile time for Rates
-    pub const RD_TIMES_LD: u64 = (R_DENOM as u64 * L_DENOM as u64) / Self::DIVISOR_2;
+    pub const RD_TIMES_LD: u64 = (RDenom::U64 * LDenom::U64) / Self::DIVISOR_2;
 
     /// Helper constants generated at compile time for Rates
     pub const RATE_TO_DURATION_NUMERATOR: u64 = Self::RD_TIMES_LD / Self::LN_TIMES_RN;
