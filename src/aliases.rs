@@ -11,6 +11,7 @@ use typenum::U1000000000;
 use typenum::U36;
 use typenum::U60;
 
+/// There are 3600 seconds in an hour
 pub type U3600 = op!(U36 * U100);
 
 use crate::Duration;

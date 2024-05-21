@@ -62,4 +62,3 @@ where
     /// Helper constants generated at compile time
     pub const SAME_BASE: bool = Self::LD_TIMES_RN == Self::RD_TIMES_LN;
 }
-
