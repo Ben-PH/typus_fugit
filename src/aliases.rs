@@ -1,8 +1,6 @@
 //! Type aliases for common uses
 
 use typenum::op;
-use typenum::NonZero;
-use typenum::Unsigned;
 use typenum::U1;
 use typenum::U100;
 use typenum::U1000;
@@ -73,24 +71,24 @@ pub type HoursDurationU32 = Duration<u32, U3600, U1>;
 pub type HoursDurationU64 = Duration<u64, U3600, U1>;
 
 /// Alias for durations that come from timers with a specific frequency
-pub type TimerDuration<T, FreqHz: Unsigned + NonZero> = Duration<T, U1, FreqHz>;
+pub type TimerDuration<T, FreqHz> = Duration<T, U1, FreqHz>;
 
 /// Alias for durations that come from timers with a specific frequency (`u32` backing storage)
-pub type TimerDurationU32<FreqHz: Unsigned + NonZero> = Duration<u32, U1, FreqHz>;
+pub type TimerDurationU32<FreqHz> = Duration<u32, U1, FreqHz>;
 
 /// Alias for durations that come from timers with a specific frequency (`u64` backing storage)
-pub type TimerDurationU64<FreqHz: Unsigned + NonZero> = Duration<u64, U1, FreqHz>;
+pub type TimerDurationU64<FreqHz> = Duration<u64, U1, FreqHz>;
 
 // -------------------------------
 
 /// Alias for instants that come from timers with a specific frequency
-pub type TimerInstant<T, FreqHz: Unsigned + NonZero> = Instant<T, U1, FreqHz>;
+pub type TimerInstant<T, FreqHz> = Instant<T, U1, FreqHz>;
 
 /// Alias for instants that come from timers with a specific frequency (`u32` backing storage)
-pub type TimerInstantU32<FreqHz: Unsigned + NonZero> = Instant<u32, U1, FreqHz>;
+pub type TimerInstantU32<FreqHz> = Instant<u32, U1, FreqHz>;
 
 /// Alias for instants that come from timers with a specific frequency (`u64` backing storage)
-pub type TimerInstantU64<FreqHz: Unsigned + NonZero> = Instant<u64, U1, FreqHz>;
+pub type TimerInstantU64<FreqHz> = Instant<u64, U1, FreqHz>;
 
 // -------------------------------
 
@@ -122,10 +120,10 @@ pub type MegahertzU32 = Rate<u32, U1000000, U1>;
 pub type MegahertzU64 = Rate<u64, U1000000, U1>;
 
 /// Alias for rate that come from timers with a specific frequency
-pub type TimerRate<T, FreqHz: Unsigned + NonZero> = Rate<T, FreqHz, U1>;
+pub type TimerRate<T, FreqHz> = Rate<T, FreqHz, U1>;
 
 /// Alias for rate that come from timers with a specific frequency (`u32` backing storage)
-pub type TimerRateU32<FreqHz: Unsigned + NonZero> = Rate<u32, FreqHz, U1>;
+pub type TimerRateU32<FreqHz> = Rate<u32, FreqHz, U1>;
 
 /// Alias for rate that come from timers with a specific frequency (`u64` backing storage)
-pub type TimerRateU64<FreqHz: Unsigned + NonZero> = Rate<u64, FreqHz, U1>;
+pub type TimerRateU64<FreqHz> = Rate<u64, FreqHz, U1>;
