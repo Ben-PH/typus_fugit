@@ -13,6 +13,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 
+## [v0.4.0]
+
+### Added
+
+- re-export of typenum v1.17.0
+
+### Fixed
+
+### Changed
+
+- Migration from const-generics to types to encapsulate the scaling fraction.
+
 ## [v0.3.7]
 
 ### Added
