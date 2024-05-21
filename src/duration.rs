@@ -1,22 +1,23 @@
-use typenum::{NonZero, Unsigned};
-
 use crate::helpers::{self, Helpers};
 use crate::Rate;
 use core::cmp::Ordering;
 use core::convert;
 use core::ops;
+use typenum::{NonZero, Unsigned};
 
 /// Represents a duration of time.
 ///
 /// The generic `T` can either be `u32` or `u64`, and the const generics represent the ratio of the
-/// ticks contained within the duration: `duration in seconds = NOM / DENOM * ticks`
+/// ticks contained within the duration: `duration in seconds = Numer / Denom * ticks`
 #[derive(Clone, Copy, Debug)]
 pub struct Duration<T, Numer: Unsigned, Denom: Unsigned + NonZero> {
     pub(crate) ticks: T,
+    numer: PhantomData<Numer>,
+    denom: PhantomData<Denom>,
 }
 
 macro_rules! shorthand {
-    ($i:ty, $nom:literal, $denum:literal, $unit:ident, $to_unit:ident, $unital:ident, $unitstr:literal) => {
+    ($i:ty, $nom:ty, $denum:ty, $unit:ident, $to_unit:ident, $unital:ident, $unitstr:literal) => {
         #[doc = concat!("Convert the Duration to an integer number of ", $unitstr, ".")]
         #[inline]
         pub const fn $to_unit(&self) -> $i {
@@ -100,7 +101,7 @@ macro_rules! impl_duration_for_integer {
             /// assert_eq!(d1.checked_add(d2).unwrap().ticks(), 3);
             /// assert_eq!(d1.checked_add(d3), None);
             /// ```
-            pub const fn checked_add<ONumer, ODenom>(
+            pub const fn checked_add<ONumer: Unsigned, ODenom: Unsigned + NonZero>(
                 self,
                 other: Duration<$i, ONumer, ODenom>,
             ) -> Option<Self> {
@@ -139,7 +140,7 @@ macro_rules! impl_duration_for_integer {
             /// assert_eq!(d2.checked_sub(d1).unwrap().ticks(), 1);
             /// assert_eq!(d1.checked_sub(d3), None);
             /// ```
-            pub const fn checked_sub<ONumer, ODenom>(
+            pub const fn checked_sub<ONumer: Unsigned, ODenom: Unsigned + NonZero>(
                 self,
                 other: Duration<$i, ONumer, ODenom>,
             ) -> Option<Self> {
@@ -189,7 +190,7 @@ macro_rules! impl_duration_for_integer {
             /// assert_eq!(d1.const_partial_cmp(d2), Some(core::cmp::Ordering::Greater));
             /// ```
             #[inline]
-            pub const fn const_partial_cmp<RNumer, RDenom>(
+            pub const fn const_partial_cmp<RNumer: Unsigned, RDenom: Unsigned + NonZero>(
                 self,
                 other: Duration<$i, RNumer, RDenom>
             ) -> Option<Ordering> {
@@ -237,7 +238,7 @@ macro_rules! impl_duration_for_integer {
             /// assert!(d1.const_eq(d2));
             /// ```
             #[inline]
-            pub const fn const_eq<RNumer, RDenom>(
+            pub const fn const_eq<RNumer: Unsigned, RDenom: Unsigned + NonZero>(
                 self,
                 other: Duration<$i, RNumer, RDenom>
             ) -> bool {
@@ -269,7 +270,7 @@ macro_rules! impl_duration_for_integer {
             ///
             /// assert_eq!(d2.unwrap().ticks(), 10);
             /// ```
-            pub const fn const_try_from<INumer, IDenom>(
+            pub const fn const_try_from<INumer: Unsigned, IDenom: Unsigned + NonZero>(
                 duration: Duration<$i, INumer, IDenom>,
             ) -> Option<Self> {
                 if Helpers::<INumer, IDenom, Numer, Denom>::SAME_BASE {
@@ -301,7 +302,7 @@ macro_rules! impl_duration_for_integer {
             /// assert_eq!(d2.unwrap().ticks(), 10);
             /// ```
             #[inline]
-            pub const fn const_try_into<ONumer, ODenom>(
+            pub const fn const_try_into<ONumer: Unsigned, ODenom: Unsigned + NonZero>(
                 self,
             ) -> Option<Duration<$i, ONumer, ODenom>> {
                 Duration::<$i, ONumer, ODenom>::const_try_from(self)
@@ -317,17 +318,17 @@ macro_rules! impl_duration_for_integer {
             /// assert_eq!(r1.unwrap().raw(), 500);
             /// ```
             #[inline]
-            pub const fn try_into_rate<const O_NOM: u32, const O_DENOM: u32>(
+            pub const fn try_into_rate<ONumer: Unsigned, ODenom: Unsigned + NonZero>(
                 self,
-            ) -> Option<Rate<$i, O_NOM, O_DENOM>> {
-                Rate::<$i, O_NOM, O_DENOM>::try_from_duration(self)
+            ) -> Option<Rate<$i, ONumer, ODenom>> {
+                Rate::<$i, ONumer, ODenom>::try_from_duration(self)
             }
 
             /// Convert from duration to rate.
             #[inline]
-            pub const fn into_rate<const O_NOM: u32, const O_DENOM: u32>(
+            pub const fn into_rate<ONumer: Unsigned, ODenom: Unsigned + NonZero>(
                 self,
-            ) -> Rate<$i, O_NOM, O_DENOM> {
+            ) -> Rate<$i, ONumer, ODenom> {
                 if let Some(v) = self.try_into_rate() {
                     v
                 } else {
@@ -345,7 +346,7 @@ macro_rules! impl_duration_for_integer {
             /// assert_eq!(d1.unwrap().ticks(), 1_000);
             /// ```
             #[inline]
-            pub const fn try_from_rate<INumer, IDenom>(
+            pub const fn try_from_rate<INumer: Unsigned, IDenom: Unsigned + NonZero>(
                 rate: Rate<$i, INumer, IDenom>,
             ) -> Option<Self> {
                 if rate.raw > 0 {
@@ -360,8 +361,8 @@ macro_rules! impl_duration_for_integer {
 
             /// Convert from rate to duration.
             #[inline]
-            pub const fn from_rate<const I_NOM: u32, const I_DENOM: u32>(
-                rate: Rate<$i, I_NOM, I_DENOM>,
+            pub const fn from_rate<INumer: Unsigned, IDenom: Unsigned + NonZero>(
+                rate: Rate<$i, INumer, IDenom>,
             ) -> Self {
                 if let Some(v) = Self::try_from_rate(rate) {
                     v
@@ -389,7 +390,7 @@ macro_rules! impl_duration_for_integer {
             /// // Fails conversion due to tick overflow
             #[doc = concat!("const D2: Duration::<", stringify!($i), ", 1, 200> = D1.convert();")]
             #[inline]
-            pub const fn convert<ONumer, ODenom>(
+            pub const fn convert<ONumer: Unsigned, ODenom: Unsigned + NonZero>(
                 self,
             ) -> Duration<$i, ONumer, ODenom> {
                 if let Some(v) = self.const_try_into() {
@@ -399,12 +400,12 @@ macro_rules! impl_duration_for_integer {
                 }
             }
 
-            shorthand!($i, 1, 1_000_000_000, nanos, to_nanos, nanos_at_least, "nanoseconds");
-            shorthand!($i, 1, 1_000_000, micros, to_micros, micros_at_least, "microseconds");
-            shorthand!($i, 1, 1_000, millis, to_millis, millis_at_least, "milliseconds");
-            shorthand!($i, 1, 1, secs, to_secs, secs_at_least, "seconds");
-            shorthand!($i, 60, 1, minutes, to_minutes, minutes_at_least, "minutes");
-            shorthand!($i, 3600, 1, hours, to_hours, hours_at_least, "hours");
+            shorthand!($i, typenum::U1, typenum::U1000000000, nanos, to_nanos, nanos_at_least, "nanoseconds");
+            shorthand!($i, typenum::U1, typenum::U1000000, micros, to_micros, micros_at_least, "microseconds");
+            shorthand!($i, typenum::U1, typenum::U1000, millis, to_millis, millis_at_least, "milliseconds");
+            shorthand!($i, typenum::U1, typenum::U1, secs, to_secs, secs_at_least, "seconds");
+            shorthand!($i, typenum::U60, typenum::U1, minutes, to_minutes, minutes_at_least, "minutes");
+            shorthand!($i, typenum::U3600, typenum::U1, hours, to_hours, hours_at_least, "hours");
 
             /// Shorthand for creating a duration which represents hertz.
             #[inline]
@@ -428,243 +429,192 @@ macro_rules! impl_duration_for_integer {
             }
         }
 
-        // impl<const L_NOM: u32, const L_DENOM: u32, const R_NOM: u32, const R_DENOM: u32>
-        //     PartialOrd<Duration<$i, R_NOM, R_DENOM>> for Duration<$i, L_NOM, L_DENOM>
-        // {
-        //     #[inline]
-        //     fn partial_cmp(&self, other: &Duration<$i, R_NOM, R_DENOM>) -> Option<Ordering> {
-        //         self.const_partial_cmp(*other)
-        //     }
-        // }
+        impl<LNumer: Unsigned, LDenom: Unsigned + NonZero, RNumer: Unsigned, RDenom: Unsigned + NonZero>
+            PartialOrd<Duration<$i, RNumer, RDenom>> for Duration<$i, LNumer, LDenom>
+        {
+            #[inline]
+            fn partial_cmp(&self, other: &Duration<$i, RNumer, RDenom>) -> Option<Ordering> {
+                self.const_partial_cmp(*other)
+            }
+        }
 
-        // impl<const NOM: u32, const DENOM: u32> Ord for Duration<$i, NOM, DENOM> {
-        //     #[inline]
-        //     fn cmp(&self, other: &Self) -> Ordering {
-        //         Self::_const_cmp(self.ticks, other.ticks)
-        //     }
-        // }
+        impl<Numer: Unsigned, Denom: Unsigned + NonZero> Ord for Duration<$i, Numer, Denom> {
+            #[inline]
+            fn cmp(&self, other: &Self) -> Ordering {
+                Self::_const_cmp(self.ticks, other.ticks)
+            }
+        }
 
-        // impl<const L_NOM: u32, const L_DENOM: u32, const R_NOM: u32, const R_DENOM: u32>
-        //     PartialEq<Duration<$i, R_NOM, R_DENOM>> for Duration<$i, L_NOM, L_DENOM>
-        // {
-        //     #[inline]
-        //     fn eq(&self, other: &Duration<$i, R_NOM, R_DENOM>) -> bool {
-        //         self.const_eq(*other)
-        //     }
-        // }
+        impl<LNumer: Unsigned, LDenom: Unsigned + NonZero, RNumer: Unsigned, RDenom: Unsigned + NonZero>
+            PartialEq<Duration<$i, RNumer, RDenom>> for Duration<$i, LNumer, LDenom>
+        {
+            #[inline]
+            fn eq(&self, other: &Duration<$i, RNumer, RDenom>) -> bool {
+                self.const_eq(*other)
+            }
+        }
 
-        // impl<const NOM: u32, const DENOM: u32> Eq for Duration<$i, NOM, DENOM> {}
+        impl<Numer: Unsigned, Denom: Unsigned + NonZero> Eq for Duration<$i, Numer, Denom> {}
 
-        // // Duration - Duration = Duration (only same base until const_generics_defaults is
-        // // stabilized)
-        // impl<const NOM: u32, const DENOM: u32> ops::Sub<Duration<$i, NOM, DENOM>>
-        //     for Duration<$i, NOM, DENOM>
-        // {
-        //     type Output = Duration<$i, NOM, DENOM>;
+        // Duration - Duration = Duration (only same base until const_generics_defaults is
+        // stabilized)
+        impl<Numer: Unsigned, Denom: Unsigned + NonZero> ops::Sub<Duration<$i, Numer, Denom>>
+            for Duration<$i, Numer, Denom>
+        {
+            type Output = Duration<$i, Numer, Denom>;
 
-        //     #[inline]
-        //     fn sub(self, other: Duration<$i, NOM, DENOM>) -> Self::Output {
-        //         if let Some(v) = self.checked_sub(other) {
-        //             v
-        //         } else {
-        //             panic!("Sub failed!");
-        //         }
-        //     }
-        // }
+            #[inline]
+            fn sub(self, other: Duration<$i, Numer, Denom>) -> Self::Output {
+                if let Some(v) = self.checked_sub(other) {
+                    v
+                } else {
+                    panic!("Sub failed!");
+                }
+            }
+        }
 
-        // // Duration -= Duration
-        // impl<const NOM: u32, const DENOM: u32> ops::SubAssign<Duration<$i, NOM, DENOM>>
-        //     for Duration<$i, NOM, DENOM>
-        // {
-        //     #[inline]
-        //     fn sub_assign(&mut self, other: Self) {
-        //         *self = *self - other;
-        //     }
-        // }
+        // Duration -= Duration
+        impl<Numer: Unsigned, Denom: Unsigned + NonZero> ops::SubAssign<Duration<$i, Numer, Denom>>
+            for Duration<$i, Numer, Denom>
+        {
+            #[inline]
+            fn sub_assign(&mut self, other: Self) {
+                *self = *self - other;
+            }
+        }
 
-        // // Duration + Duration = Duration (only same base until const_generics_defaults is
-        // // stabilized)
-        // impl<const NOM: u32, const DENOM: u32> ops::Add<Duration<$i, NOM, DENOM>>
-        //     for Duration<$i, NOM, DENOM>
-        // {
-        //     type Output = Duration<$i, NOM, DENOM>;
+        // Duration + Duration = Duration (only same base until const_generics_defaults is
+        // stabilized)
+        impl<Numer: Unsigned, Denom: Unsigned + NonZero> ops::Add<Duration<$i, Numer, Denom>>
+            for Duration<$i, Numer, Denom>
+        {
+            type Output = Duration<$i, Numer, Denom>;
 
-        //     #[inline]
-        //     fn add(self, other: Duration<$i, NOM, DENOM>) -> Self::Output {
-        //         if let Some(v) = self.checked_add(other) {
-        //             v
-        //         } else {
-        //             panic!("Add failed!");
-        //         }
-        //     }
-        // }
+            #[inline]
+            fn add(self, other: Duration<$i, Numer, Denom>) -> Self::Output {
+                if let Some(v) = self.checked_add(other) {
+                    v
+                } else {
+                    panic!("Add failed!");
+                }
+            }
+        }
 
-        // // Duration += Duration
-        // impl<const NOM: u32, const DENOM: u32> ops::AddAssign<Duration<$i, NOM, DENOM>>
-        //     for Duration<$i, NOM, DENOM>
-        // {
-        //     #[inline]
-        //     fn add_assign(&mut self, other: Self) {
-        //         *self = *self + other;
-        //     }
-        // }
+        // Duration += Duration
+        impl<Numer: Unsigned, Denom: Unsigned + NonZero> ops::AddAssign<Duration<$i, Numer, Denom>>
+            for Duration<$i, Numer, Denom>
+        {
+            #[inline]
+            fn add_assign(&mut self, other: Self) {
+                *self = *self + other;
+            }
+        }
 
-        // // integer * Duration = Duration
-        // impl<const NOM: u32, const DENOM: u32> ops::Mul<Duration<$i, NOM, DENOM>> for u32 {
-        //     type Output = Duration<$i, NOM, DENOM>;
+        // integer * Duration = Duration
+        impl<Numer: Unsigned, Denom: Unsigned + NonZero> ops::Mul<Duration<$i, Numer, Denom>> for u32 {
+            type Output = Duration<$i, Numer, Denom>;
 
-        //     #[inline]
-        //     fn mul(self, mut other: Duration<$i, NOM, DENOM>) -> Self::Output {
-        //         other.ticks *= self as $i;
-        //         other
-        //     }
-        // }
+            #[inline]
+            fn mul(self, mut other: Duration<$i, Numer, Denom>) -> Self::Output {
+                other.ticks *= self as $i;
+                other
+            }
+        }
 
-        // // Duration * integer = Duration
-        // impl<const NOM: u32, const DENOM: u32> ops::Mul<u32> for Duration<$i, NOM, DENOM> {
-        //     type Output = Duration<$i, NOM, DENOM>;
+        // Duration * integer = Duration
+        impl<Numer: Unsigned, Denom: Unsigned + NonZero> ops::Mul<u32> for Duration<$i, Numer, Denom> {
+            type Output = Duration<$i, Numer, Denom>;
 
-        //     #[inline]
-        //     fn mul(mut self, other: u32) -> Self::Output {
-        //         self.ticks *= other as $i;
-        //         self
-        //     }
-        // }
+            #[inline]
+            fn mul(mut self, other: u32) -> Self::Output {
+                self.ticks *= other as $i;
+                self
+            }
+        }
 
-        // // Duration *= integer
-        // impl<const NOM: u32, const DENOM: u32> ops::MulAssign<u32>
-        //     for Duration<$i, NOM, DENOM>
-        // {
-        //     #[inline]
-        //     fn mul_assign(&mut self, other: u32) {
-        //         *self = *self * other;
-        //     }
-        // }
+        // Duration *= integer
+        impl<Numer: Unsigned, Denom: Unsigned + NonZero> ops::MulAssign<u32>
+            for Duration<$i, Numer, Denom>
+        {
+            #[inline]
+            fn mul_assign(&mut self, other: u32) {
+                *self = *self * other;
+            }
+        }
 
-        // // Duration / integer = Duration
-        // impl<const NOM: u32, const DENOM: u32> ops::Div<u32> for Duration<$i, NOM, DENOM> {
-        //     type Output = Duration<$i, NOM, DENOM>;
+        // Duration / integer = Duration
+        impl<Numer: Unsigned, Denom: Unsigned + NonZero> ops::Div<u32> for Duration<$i, Numer, Denom> {
+            type Output = Duration<$i, Numer, Denom>;
 
-        //     #[inline]
-        //     fn div(mut self, other: u32) -> Self::Output {
-        //         self.ticks /= other as $i;
-        //         self
-        //     }
-        // }
+            #[inline]
+            fn div(mut self, other: u32) -> Self::Output {
+                self.ticks /= other as $i;
+                self
+            }
+        }
 
-        // // Duration /= integer
-        // impl<const NOM: u32, const DENOM: u32> ops::DivAssign<u32>
-        //     for Duration<$i, NOM, DENOM>
-        // {
-        //     #[inline]
-        //     fn div_assign(&mut self, other: u32) {
-        //         *self = *self / other;
-        //     }
-        // }
+        // Duration /= integer
+        impl<Numer: Unsigned, Denom: Unsigned + NonZero> ops::DivAssign<u32>
+            for Duration<$i, Numer, Denom>
+        {
+            #[inline]
+            fn div_assign(&mut self, other: u32) {
+                *self = *self / other;
+            }
+        }
 
-        // // Duration / Duration = integer
-        // impl<const L_NOM: u32, const L_DENOM: u32, const R_NOM: u32, const R_DENOM: u32> ops::Div<Duration<$i, R_NOM, R_DENOM>>
-        //     for Duration<$i, L_NOM, L_DENOM>
-        // {
-        //     type Output = $i;
+        // Duration / Duration = integer
+        impl<LNumer: Unsigned, LDenom: Unsigned + NonZero, RNumer: Unsigned, RDenom: Unsigned + NonZero> ops::Div<Duration<$i, RNumer, RDenom>>
+            for Duration<$i, LNumer, LDenom>
+        {
+            type Output = $i;
 
-        //     #[inline]
-        //     fn div(self, other: Duration<$i, R_NOM, R_DENOM>) -> Self::Output {
-        //         let conv: Duration<$i, R_NOM, R_DENOM> = self.convert();
-        //         conv.ticks / other.ticks
-        //     }
-        // }
+            #[inline]
+            fn div(self, other: Duration<$i, RNumer, RDenom>) -> Self::Output {
+                let conv: Duration<$i, RNumer, RDenom> = self.convert();
+                conv.ticks / other.ticks
+            }
+        }
 
         #[cfg(feature = "defmt")]
-        impl<$i> defmt::Format for Duration<$i, typenum::U3600, typenum::U1>
+        impl<Numer: Unsigned, Denom: Unsigned + NonZero> defmt::Format for Duration<$i, Numer, Denom>
         {
             fn format(&self, f: defmt::Formatter) {
-                defmt::write!(f, "{} h", self.ticks)
-            }
-        }
-        #[cfg(feature = "defmt")]
-        impl<$i> defmt::Format for Duration<$i, typenum::U60, typenum::U1>
-        {
-            fn format(&self, f: defmt::Formatter) {
-                defmt::write!(f, "{} min", self.ticks)
-            }
-        }
-        #[cfg(feature = "defmt")]
-        impl<$i> defmt::Format for Duration<$i, typenum::U1, typenum::U1>
-        {
-            fn format(&self, f: defmt::Formatter) {
-                defmt::write!(f, "{} s", self.ticks)
-            }
-        }
-        #[cfg(feature = "defmt")]
-        impl<$i> defmt::Format for Duration<$i, typenum::U1, typenum::U1000>
-        {
-            fn format(&self, f: defmt::Formatter) {
-                defmt::write!(f, "{} ms", self.ticks)
-            }
-        }
-        #[cfg(feature = "defmt")]
-        impl<$i> defmt::Format for Duration<$i, typenum::U1, typenum::U1000000>
-        {
-            fn format(&self, f: defmt::Formatter) {
-                defmt::write!(f, "{} μs", self.ticks)
-            }
-        }
-        #[cfg(feature = "defmt")]
-        impl<$i> defmt::Format for Duration<$i, typenum::U1, typenum::U1000000999>
-        {
-            fn format(&self, f: defmt::Formatter) {
-                defmt::write!(f, "{} ns", self.ticks)
-            }
-        }
-        #[cfg(feature = "defmt")]
-        impl<$i, Numer, Denom> defmt::Format for Duration<$i, Numer, Denom>
-        {
-            fn format(&self, f: defmt::Formatter) {
-                defmt::write!(f, "{} ticks @ ({}/{})", self.ticks, Numer::U64, Denom::U64)
+                if Numer::U64 == 3_600 && Denom::U64 == 1 {
+                    defmt::write!(f, "{} h", self.ticks)
+                } else if Numer::U64 == 60 && Denom::U64 == 1 {
+                    defmt::write!(f, "{} min", self.ticks)
+                } else if Numer::U64 == 1 && Denom::U64 == 1 {
+                    defmt::write!(f, "{} s", self.ticks)
+                } else if Numer::U64 == 1 && Denom::U64 == 1_000 {
+                    defmt::write!(f, "{} ms", self.ticks)
+                } else if Numer::U64 == 1 && Denom::U64 == 1_000_000 {
+                    defmt::write!(f, "{} us", self.ticks)
+                } else if Numer::U64 == 1 && Denom::U64 == 1_000_000_000 {
+                    defmt::write!(f, "{} ns", self.ticks)
+                } else {
+                    defmt::write!(f, "{} ticks @ ({}/{})", self.ticks, Numer::U64, Denom::U64)
+                }
             }
         }
 
-        impl<$i> core::fmt::Display for Duration<$i, typenum::U3600, typenum::U1>
-        {
-            fn format(&self, f: core::fmt::Formatter<'_>) -> core::fmt::Result {
-                write!(f, "{} h", self.ticks)
-            }
-        }
-        impl<$i> defmt::Format for Duration<$i, typenum::U60, typenum::U1>
-        {
-            fn format(&self, f: core::fmt::Formatter<'_>) -> core::fmt::Result {
-                write!(f, "{} min", self.ticks)
-            }
-        }
-        impl<$i> defmt::Format for Duration<$i, typenum::U1, typenum::U1>
-        {
-            fn format(&self, f: core::fmt::Formatter<'_>) -> core::fmt::Result {
-                write!(f, "{} s", self.ticks)
-            }
-        }
-        impl<$i> defmt::Format for Duration<$i, typenum::U1, typenum::U1000>
-        {
-            fn format(&self, f: core::fmt::Formatter<'_>) -> core::fmt::Result {
-                write!(f, "{} ms", self.ticks)
-            }
-        }
-        impl<$i> defmt::Format for Duration<$i, typenum::U1, typenum::U1000000>
-        {
-            fn format(&self, f: core::fmt::Formatter<'_>) -> core::fmt::Result {
-                write!(f, "{} μs", self.ticks)
-            }
-        }
-        impl<$i> defmt::Format for Duration<$i, typenum::U1, typenum::U1000000999>
-        {
-            fn format(&self, f: core::fmt::Formatter<'_>) -> core::fmt::Result {
-                write!(f, "{} ns", self.ticks)
-            }
-        }
-        impl<$i, Numer, Denom> defmt::Format for Duration<$i, Numer, Denom>
-        {
-            fn format(&self, f: core::fmt::Formatter<'_>) -> core::fmt::Result {
-                write!(f, "{} ticks @ ({}/{})", self.ticks, Numer::U64, Denom::U64)
+        impl<Numer: Unsigned, Denom: Unsigned + NonZero> core::fmt::Display for Duration<$i, Numer, Denom> {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                if Numer::U64 == 3_600 && Denom::U64 == 1 {
+                    write!(f, "{} h", self.ticks)
+                } else if Numer::U64 == 60 && Denom::U64 == 1 {
+                    write!(f, "{} min", self.ticks)
+                } else if Numer::U64 == 1 && Denom::U64 == 1 {
+                    write!(f, "{} s", self.ticks)
+                } else if Numer::U64 == 1 && Denom::U64 == 1_000 {
+                    write!(f, "{} ms", self.ticks)
+                } else if Numer::U64 == 1 && Denom::U64 == 1_000_000 {
+                    write!(f, "{} us", self.ticks)
+                } else if Numer::U64 == 1 && Denom::U64 == 1_000_000_000 {
+                    write!(f, "{} ns", self.ticks)
+                } else {
+                    write!(f, "{} ticks @ ({}/{})", self.ticks, Numer::U64, Denom::U64)
+                }
             }
         }
     };
@@ -677,334 +627,334 @@ impl_duration_for_integer!(u64);
 // Operations between u32 and u64 Durations
 //
 
-impl<const NOM: u32, const DENOM: u32> From<Duration<u32, NOM, DENOM>>
-    for Duration<u64, NOM, DENOM>
-{
-    #[inline]
-    fn from(val: Duration<u32, NOM, DENOM>) -> Duration<u64, NOM, DENOM> {
-        Duration::<u64, NOM, DENOM>::from_ticks(val.ticks() as u64)
-    }
-}
-
-impl<const NOM: u32, const DENOM: u32> convert::TryFrom<Duration<u64, NOM, DENOM>>
-    for Duration<u32, NOM, DENOM>
-{
-    type Error = ();
-
-    #[inline]
-    fn try_from(val: Duration<u64, NOM, DENOM>) -> Result<Duration<u32, NOM, DENOM>, ()> {
-        Ok(Duration::<u32, NOM, DENOM>::from_ticks(
-            val.ticks().try_into().map_err(|_| ())?,
-        ))
-    }
-}
-
-// Duration - Duration = Duration (to make shorthands work, until const_generics_defaults is
-// stabilized)
-impl<const NOM: u32, const DENOM: u32> ops::Sub<Duration<u32, NOM, DENOM>>
-    for Duration<u64, NOM, DENOM>
-{
-    type Output = Duration<u64, NOM, DENOM>;
-
-    #[inline]
-    fn sub(self, other: Duration<u32, NOM, DENOM>) -> Self::Output {
-        if let Some(v) =
-            self.checked_sub(Duration::<u64, NOM, DENOM>::from_ticks(other.ticks() as u64))
-        {
-            v
-        } else {
-            panic!("Sub failed!");
-        }
-    }
-}
-
-// Duration -= Duration (to make shorthands work, until const_generics_defaults is stabilized)
-impl<const NOM: u32, const DENOM: u32> ops::SubAssign<Duration<u32, NOM, DENOM>>
-    for Duration<u64, NOM, DENOM>
-{
-    #[inline]
-    fn sub_assign(&mut self, other: Duration<u32, NOM, DENOM>) {
-        *self = *self - other;
-    }
-}
-
-// Duration + Duration = Duration (to make shorthands work, until const_generics_defaults is
-// stabilized)
-impl<const NOM: u32, const DENOM: u32> ops::Add<Duration<u32, NOM, DENOM>>
-    for Duration<u64, NOM, DENOM>
-{
-    type Output = Duration<u64, NOM, DENOM>;
-
-    #[inline]
-    fn add(self, other: Duration<u32, NOM, DENOM>) -> Self::Output {
-        if let Some(v) =
-            self.checked_add(Duration::<u64, NOM, DENOM>::from_ticks(other.ticks() as u64))
-        {
-            v
-        } else {
-            panic!("Add failed!");
-        }
-    }
-}
-
-// Duration += Duration (to make shorthands work, until const_generics_defaults is stabilized)
-impl<const NOM: u32, const DENOM: u32> ops::AddAssign<Duration<u32, NOM, DENOM>>
-    for Duration<u64, NOM, DENOM>
-{
-    #[inline]
-    fn add_assign(&mut self, other: Duration<u32, NOM, DENOM>) {
-        *self = *self + other;
-    }
-}
-
-impl<const L_NOM: u32, const L_DENOM: u32, const R_NOM: u32, const R_DENOM: u32>
-    PartialOrd<Duration<u32, R_NOM, R_DENOM>> for Duration<u64, L_NOM, L_DENOM>
-{
-    #[inline]
-    fn partial_cmp(&self, other: &Duration<u32, R_NOM, R_DENOM>) -> Option<Ordering> {
-        self.partial_cmp(&Duration::<u64, R_NOM, R_DENOM>::from_ticks(
-            other.ticks() as u64
-        ))
-    }
-}
-
-impl<const L_NOM: u32, const L_DENOM: u32, const R_NOM: u32, const R_DENOM: u32>
-    PartialEq<Duration<u32, R_NOM, R_DENOM>> for Duration<u64, L_NOM, L_DENOM>
-{
-    #[inline]
-    fn eq(&self, other: &Duration<u32, R_NOM, R_DENOM>) -> bool {
-        self.eq(&Duration::<u64, R_NOM, R_DENOM>::from_ticks(
-            other.ticks() as u64
-        ))
-    }
-}
-
-impl<const L_NOM: u32, const L_DENOM: u32, const R_NOM: u32, const R_DENOM: u32>
-    PartialOrd<Duration<u64, R_NOM, R_DENOM>> for Duration<u32, L_NOM, L_DENOM>
-{
-    #[inline]
-    fn partial_cmp(&self, other: &Duration<u64, R_NOM, R_DENOM>) -> Option<Ordering> {
-        Duration::<u64, L_NOM, L_DENOM>::from_ticks(self.ticks as u64).partial_cmp(other)
-    }
-}
-
-impl<const L_NOM: u32, const L_DENOM: u32, const R_NOM: u32, const R_DENOM: u32>
-    PartialEq<Duration<u64, R_NOM, R_DENOM>> for Duration<u32, L_NOM, L_DENOM>
-{
-    #[inline]
-    fn eq(&self, other: &Duration<u64, R_NOM, R_DENOM>) -> bool {
-        Duration::<u64, L_NOM, L_DENOM>::from_ticks(self.ticks as u64).eq(other)
-    }
-}
-
-/// Extension trait for simple short-hands for u32 Durations
-pub trait ExtU32 {
-    /// Shorthand for creating a duration which represents nanoseconds.
-    fn nanos<const NOM: u32, const DENOM: u32>(self) -> Duration<u32, NOM, DENOM>;
-
-    /// Shorthand for creating a duration which represents microseconds.
-    fn micros<const NOM: u32, const DENOM: u32>(self) -> Duration<u32, NOM, DENOM>;
-
-    /// Shorthand for creating a duration which represents milliseconds.
-    fn millis<const NOM: u32, const DENOM: u32>(self) -> Duration<u32, NOM, DENOM>;
-
-    /// Shorthand for creating a duration which represents seconds.
-    fn secs<const NOM: u32, const DENOM: u32>(self) -> Duration<u32, NOM, DENOM>;
-
-    /// Shorthand for creating a duration which represents minutes.
-    fn minutes<const NOM: u32, const DENOM: u32>(self) -> Duration<u32, NOM, DENOM>;
-
-    /// Shorthand for creating a duration which represents hours.
-    fn hours<const NOM: u32, const DENOM: u32>(self) -> Duration<u32, NOM, DENOM>;
-}
-
-impl ExtU32 for u32 {
-    #[inline]
-    fn nanos<const NOM: u32, const DENOM: u32>(self) -> Duration<u32, NOM, DENOM> {
-        Duration::<u32, NOM, DENOM>::nanos(self)
-    }
-
-    #[inline]
-    fn micros<const NOM: u32, const DENOM: u32>(self) -> Duration<u32, NOM, DENOM> {
-        Duration::<u32, NOM, DENOM>::micros(self)
-    }
-
-    #[inline]
-    fn millis<const NOM: u32, const DENOM: u32>(self) -> Duration<u32, NOM, DENOM> {
-        Duration::<u32, NOM, DENOM>::millis(self)
-    }
-
-    #[inline]
-    fn secs<const NOM: u32, const DENOM: u32>(self) -> Duration<u32, NOM, DENOM> {
-        Duration::<u32, NOM, DENOM>::secs(self)
-    }
-
-    #[inline]
-    fn minutes<const NOM: u32, const DENOM: u32>(self) -> Duration<u32, NOM, DENOM> {
-        Duration::<u32, NOM, DENOM>::minutes(self)
-    }
-
-    #[inline]
-    fn hours<const NOM: u32, const DENOM: u32>(self) -> Duration<u32, NOM, DENOM> {
-        Duration::<u32, NOM, DENOM>::hours(self)
-    }
-}
-
-/// Extension trait for simple short-hands for u32 Durations (ceil rounded)
-pub trait ExtU32Ceil {
-    /// Shorthand for creating a duration which represents nanoseconds.
-    fn nanos_at_least<const NOM: u32, const DENOM: u32>(self) -> Duration<u32, NOM, DENOM>;
-
-    /// Shorthand for creating a duration which represents microseconds.
-    fn micros_at_least<const NOM: u32, const DENOM: u32>(self) -> Duration<u32, NOM, DENOM>;
-
-    /// Shorthand for creating a duration which represents milliseconds.
-    fn millis_at_least<const NOM: u32, const DENOM: u32>(self) -> Duration<u32, NOM, DENOM>;
-
-    /// Shorthand for creating a duration which represents seconds.
-    fn secs_at_least<const NOM: u32, const DENOM: u32>(self) -> Duration<u32, NOM, DENOM>;
-
-    /// Shorthand for creating a duration which represents minutes.
-    fn minutes_at_least<const NOM: u32, const DENOM: u32>(self) -> Duration<u32, NOM, DENOM>;
-
-    /// Shorthand for creating a duration which represents hours.
-    fn hours_at_least<const NOM: u32, const DENOM: u32>(self) -> Duration<u32, NOM, DENOM>;
-}
-
-impl ExtU32Ceil for u32 {
-    #[inline]
-    fn nanos_at_least<const NOM: u32, const DENOM: u32>(self) -> Duration<u32, NOM, DENOM> {
-        Duration::<u32, NOM, DENOM>::nanos_at_least(self)
-    }
-
-    #[inline]
-    fn micros_at_least<const NOM: u32, const DENOM: u32>(self) -> Duration<u32, NOM, DENOM> {
-        Duration::<u32, NOM, DENOM>::micros_at_least(self)
-    }
-
-    #[inline]
-    fn millis_at_least<const NOM: u32, const DENOM: u32>(self) -> Duration<u32, NOM, DENOM> {
-        Duration::<u32, NOM, DENOM>::millis_at_least(self)
-    }
-
-    #[inline]
-    fn secs_at_least<const NOM: u32, const DENOM: u32>(self) -> Duration<u32, NOM, DENOM> {
-        Duration::<u32, NOM, DENOM>::secs_at_least(self)
-    }
-
-    #[inline]
-    fn minutes_at_least<const NOM: u32, const DENOM: u32>(self) -> Duration<u32, NOM, DENOM> {
-        Duration::<u32, NOM, DENOM>::minutes_at_least(self)
-    }
-
-    #[inline]
-    fn hours_at_least<const NOM: u32, const DENOM: u32>(self) -> Duration<u32, NOM, DENOM> {
-        Duration::<u32, NOM, DENOM>::hours_at_least(self)
-    }
-}
-
-/// Extension trait for simple short-hands for u64 Durations
-pub trait ExtU64 {
-    /// Shorthand for creating a duration which represents nanoseconds.
-    fn nanos<const NOM: u32, const DENOM: u32>(self) -> Duration<u64, NOM, DENOM>;
-
-    /// Shorthand for creating a duration which represents microseconds.
-    fn micros<const NOM: u32, const DENOM: u32>(self) -> Duration<u64, NOM, DENOM>;
-
-    /// Shorthand for creating a duration which represents milliseconds.
-    fn millis<const NOM: u32, const DENOM: u32>(self) -> Duration<u64, NOM, DENOM>;
-
-    /// Shorthand for creating a duration which represents seconds.
-    fn secs<const NOM: u32, const DENOM: u32>(self) -> Duration<u64, NOM, DENOM>;
-
-    /// Shorthand for creating a duration which represents minutes.
-    fn minutes<const NOM: u32, const DENOM: u32>(self) -> Duration<u64, NOM, DENOM>;
-
-    /// Shorthand for creating a duration which represents hours.
-    fn hours<const NOM: u32, const DENOM: u32>(self) -> Duration<u64, NOM, DENOM>;
-}
-
-impl ExtU64 for u64 {
-    #[inline]
-    fn nanos<const NOM: u32, const DENOM: u32>(self) -> Duration<u64, NOM, DENOM> {
-        Duration::<u64, NOM, DENOM>::nanos(self)
-    }
-
-    #[inline]
-    fn micros<const NOM: u32, const DENOM: u32>(self) -> Duration<u64, NOM, DENOM> {
-        Duration::<u64, NOM, DENOM>::micros(self)
-    }
-
-    #[inline]
-    fn millis<const NOM: u32, const DENOM: u32>(self) -> Duration<u64, NOM, DENOM> {
-        Duration::<u64, NOM, DENOM>::millis(self)
-    }
-
-    #[inline]
-    fn secs<const NOM: u32, const DENOM: u32>(self) -> Duration<u64, NOM, DENOM> {
-        Duration::<u64, NOM, DENOM>::secs(self)
-    }
-
-    #[inline]
-    fn minutes<const NOM: u32, const DENOM: u32>(self) -> Duration<u64, NOM, DENOM> {
-        Duration::<u64, NOM, DENOM>::minutes(self)
-    }
-
-    #[inline]
-    fn hours<const NOM: u32, const DENOM: u32>(self) -> Duration<u64, NOM, DENOM> {
-        Duration::<u64, NOM, DENOM>::hours(self)
-    }
-}
-
-/// Extension trait for simple short-hands for u64 Durations (ceil rounded)
-pub trait ExtU64Ceil {
-    /// Shorthand for creating a duration which represents nanoseconds.
-    fn nanos_at_least<const NOM: u32, const DENOM: u32>(self) -> Duration<u64, NOM, DENOM>;
-
-    /// Shorthand for creating a duration which represents microseconds.
-    fn micros_at_least<const NOM: u32, const DENOM: u32>(self) -> Duration<u64, NOM, DENOM>;
-
-    /// Shorthand for creating a duration which represents milliseconds.
-    fn millis_at_least<const NOM: u32, const DENOM: u32>(self) -> Duration<u64, NOM, DENOM>;
-
-    /// Shorthand for creating a duration which represents seconds.
-    fn secs_at_least<const NOM: u32, const DENOM: u32>(self) -> Duration<u64, NOM, DENOM>;
-
-    /// Shorthand for creating a duration which represents minutes.
-    fn minutes_at_least<const NOM: u32, const DENOM: u32>(self) -> Duration<u64, NOM, DENOM>;
-
-    /// Shorthand for creating a duration which represents hours.
-    fn hours_at_least<const NOM: u32, const DENOM: u32>(self) -> Duration<u64, NOM, DENOM>;
-}
-
-impl ExtU64Ceil for u64 {
-    #[inline]
-    fn nanos_at_least<const NOM: u32, const DENOM: u32>(self) -> Duration<u64, NOM, DENOM> {
-        Duration::<u64, NOM, DENOM>::nanos_at_least(self)
-    }
-
-    #[inline]
-    fn micros_at_least<const NOM: u32, const DENOM: u32>(self) -> Duration<u64, NOM, DENOM> {
-        Duration::<u64, NOM, DENOM>::micros_at_least(self)
-    }
-
-    #[inline]
-    fn millis_at_least<const NOM: u32, const DENOM: u32>(self) -> Duration<u64, NOM, DENOM> {
-        Duration::<u64, NOM, DENOM>::millis_at_least(self)
-    }
-
-    #[inline]
-    fn secs_at_least<const NOM: u32, const DENOM: u32>(self) -> Duration<u64, NOM, DENOM> {
-        Duration::<u64, NOM, DENOM>::secs_at_least(self)
-    }
-
-    #[inline]
-    fn minutes_at_least<const NOM: u32, const DENOM: u32>(self) -> Duration<u64, NOM, DENOM> {
-        Duration::<u64, NOM, DENOM>::minutes_at_least(self)
-    }
-
-    #[inline]
-    fn hours_at_least<const NOM: u32, const DENOM: u32>(self) -> Duration<u64, NOM, DENOM> {
-        Duration::<u64, NOM, DENOM>::hours_at_least(self)
-    }
-}
+// impl<Numer: Unsigned, Denom: Unsigned + NonZero> From<Duration<u32, Numer, Denom>>
+//     for Duration<u64, Numer, Denom>
+// {
+//     #[inline]
+//     fn from(val: Duration<u32, Numer, Denom>) -> Duration<u64, Numer, Denom> {
+//         Duration::<u64, Numer, Denom>::from_ticks(val.ticks() as u64)
+//     }
+// }
+//
+// impl<Numer: Unsigned, Denom: Unsigned + NonZero> convert::TryFrom<Duration<u64, Numer, Denom>>
+//     for Duration<u32, Numer, Denom>
+// {
+//     type Error = ();
+//
+//     #[inline]
+//     fn try_from(val: Duration<u64, Numer, Denom>) -> Result<Duration<u32, Numer, Denom>, ()> {
+//         Ok(Duration::<u32, Numer, Denom>::from_ticks(
+//             val.ticks().try_into().map_err(|_| ())?,
+//         ))
+//     }
+// }
+//
+// // Duration - Duration = Duration (to make shorthands work, until const_generics_defaults is
+// // stabilized)
+// impl<Numer: Unsigned, Denom: Unsigned + NonZero> ops::Sub<Duration<u32, Numer, Denom>>
+//     for Duration<u64, Numer, Denom>
+// {
+//     type Output = Duration<u64, Numer, Denom>;
+//
+//     #[inline]
+//     fn sub(self, other: Duration<u32, Numer, Denom>) -> Self::Output {
+//         if let Some(v) =
+//             self.checked_sub(Duration::<u64, Numer, Denom>::from_ticks(other.ticks() as u64))
+//         {
+//             v
+//         } else {
+//             panic!("Sub failed!");
+//         }
+//     }
+// }
+//
+// // Duration -= Duration (to make shorthands work, until const_generics_defaults is stabilized)
+// impl<Numer: Unsigned, Denom: Unsigned + NonZero> ops::SubAssign<Duration<u32, Numer, Denom>>
+//     for Duration<u64, Numer, Denom>
+// {
+//     #[inline]
+//     fn sub_assign(&mut self, other: Duration<u32, Numer, Denom>) {
+//         *self = *self - other;
+//     }
+// }
+//
+// // Duration + Duration = Duration (to make shorthands work, until const_generics_defaults is
+// // stabilized)
+// impl<Numer: Unsigned, Denom: Unsigned + NonZero> ops::Add<Duration<u32, Numer, Denom>>
+//     for Duration<u64, Numer, Denom>
+// {
+//     type Output = Duration<u64, Numer, Denom>;
+//
+//     #[inline]
+//     fn add(self, other: Duration<u32, Numer, Denom>) -> Self::Output {
+//         if let Some(v) =
+//             self.checked_add(Duration::<u64, Numer, Denom>::from_ticks(other.ticks() as u64))
+//         {
+//             v
+//         } else {
+//             panic!("Add failed!");
+//         }
+//     }
+// }
+//
+// // Duration += Duration (to make shorthands work, until const_generics_defaults is stabilized)
+// impl<Numer: Unsigned, Denom: Unsigned + NonZero> ops::AddAssign<Duration<u32, Numer, Denom>>
+//     for Duration<u64, Numer, Denom>
+// {
+//     #[inline]
+//     fn add_assign(&mut self, other: Duration<u32, Numer, Denom>) {
+//         *self = *self + other;
+//     }
+// }
+//
+// impl<LNumer: Unsigned, LDenom: Unsigned + NonZero, RNumer: Unsigned, RDenom: Unsigned + NonZero>
+//     PartialOrd<Duration<u32, RNumer, RDenom>> for Duration<u64, LNumer, LDenom>
+// {
+//     #[inline]
+//     fn partial_cmp(&self, other: &Duration<u32, RNumer, RDenom>) -> Option<Ordering> {
+//         self.partial_cmp(&Duration::<u64, RNumer, RDenom>::from_ticks(
+//             other.ticks() as u64
+//         ))
+//     }
+// }
+//
+// impl<LNumer: Unsigned, LDenom: Unsigned + NonZero, RNumer: Unsigned, RDenom: Unsigned + NonZero>
+//     PartialEq<Duration<u32, RNumer, RDenom>> for Duration<u64, LNumer, LDenom>
+// {
+//     #[inline]
+//     fn eq(&self, other: &Duration<u32, RNumer, RDenom>) -> bool {
+//         self.eq(&Duration::<u64, RNumer, RDenom>::from_ticks(
+//             other.ticks() as u64
+//         ))
+//     }
+// }
+//
+// impl<LNumer: Unsigned, LDenom: Unsigned + NonZero, RNumer: Unsigned, RDenom: Unsigned + NonZero>
+//     PartialOrd<Duration<u64, RNumer, RDenom>> for Duration<u32, LNumer, LDenom>
+// {
+//     #[inline]
+//     fn partial_cmp(&self, other: &Duration<u64, RNumer, RDenom>) -> Option<Ordering> {
+//         Duration::<u64, LNumer, LDenom>::from_ticks(self.ticks as u64).partial_cmp(other)
+//     }
+// }
+//
+// impl<LNumer: Unsigned, LDenom: Unsigned + NonZero, RNumer: Unsigned, RDenom: Unsigned + NonZero>
+//     PartialEq<Duration<u64, RNumer, RDenom>> for Duration<u32, LNumer, LDenom>
+// {
+//     #[inline]
+//     fn eq(&self, other: &Duration<u64, RNumer, RDenom>) -> bool {
+//         Duration::<u64, LNumer, LDenom>::from_ticks(self.ticks as u64).eq(other)
+//     }
+// }
+//
+// /// Extension trait for simple short-hands for u32 Durations
+// pub trait ExtU32 {
+//     /// Shorthand for creating a duration which represents nanoseconds.
+//     fn nanos<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u32, Numer, Denom>;
+//
+//     /// Shorthand for creating a duration which represents microseconds.
+//     fn micros<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u32, Numer, Denom>;
+//
+//     /// Shorthand for creating a duration which represents milliseconds.
+//     fn millis<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u32, Numer, Denom>;
+//
+//     /// Shorthand for creating a duration which represents seconds.
+//     fn secs<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u32, Numer, Denom>;
+//
+//     /// Shorthand for creating a duration which represents minutes.
+//     fn minutes<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u32, Numer, Denom>;
+//
+//     /// Shorthand for creating a duration which represents hours.
+//     fn hours<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u32, Numer, Denom>;
+// }
+//
+// impl ExtU32 for u32 {
+//     #[inline]
+//     fn nanos<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u32, Numer, Denom> {
+//         Duration::<u32, Numer, Denom>::nanos(self)
+//     }
+//
+//     #[inline]
+//     fn micros<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u32, Numer, Denom> {
+//         Duration::<u32, Numer, Denom>::micros(self)
+//     }
+//
+//     #[inline]
+//     fn millis<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u32, Numer, Denom> {
+//         Duration::<u32, Numer, Denom>::millis(self)
+//     }
+//
+//     #[inline]
+//     fn secs<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u32, Numer, Denom> {
+//         Duration::<u32, Numer, Denom>::secs(self)
+//     }
+//
+//     #[inline]
+//     fn minutes<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u32, Numer, Denom> {
+//         Duration::<u32, Numer, Denom>::minutes(self)
+//     }
+//
+//     #[inline]
+//     fn hours<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u32, Numer, Denom> {
+//         Duration::<u32, Numer, Denom>::hours(self)
+//     }
+// }
+//
+// /// Extension trait for simple short-hands for u32 Durations (ceil rounded)
+// pub trait ExtU32Ceil {
+//     /// Shorthand for creating a duration which represents nanoseconds.
+//     fn nanos_at_least<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u32, Numer, Denom>;
+//
+//     /// Shorthand for creating a duration which represents microseconds.
+//     fn micros_at_least<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u32, Numer, Denom>;
+//
+//     /// Shorthand for creating a duration which represents milliseconds.
+//     fn millis_at_least<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u32, Numer, Denom>;
+//
+//     /// Shorthand for creating a duration which represents seconds.
+//     fn secs_at_least<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u32, Numer, Denom>;
+//
+//     /// Shorthand for creating a duration which represents minutes.
+//     fn minutes_at_least<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u32, Numer, Denom>;
+//
+//     /// Shorthand for creating a duration which represents hours.
+//     fn hours_at_least<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u32, Numer, Denom>;
+// }
+//
+// impl ExtU32Ceil for u32 {
+//     #[inline]
+//     fn nanos_at_least<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u32, Numer, Denom> {
+//         Duration::<u32, Numer, Denom>::nanos_at_least(self)
+//     }
+//
+//     #[inline]
+//     fn micros_at_least<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u32, Numer, Denom> {
+//         Duration::<u32, Numer, Denom>::micros_at_least(self)
+//     }
+//
+//     #[inline]
+//     fn millis_at_least<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u32, Numer, Denom> {
+//         Duration::<u32, Numer, Denom>::millis_at_least(self)
+//     }
+//
+//     #[inline]
+//     fn secs_at_least<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u32, Numer, Denom> {
+//         Duration::<u32, Numer, Denom>::secs_at_least(self)
+//     }
+//
+//     #[inline]
+//     fn minutes_at_least<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u32, Numer, Denom> {
+//         Duration::<u32, Numer, Denom>::minutes_at_least(self)
+//     }
+//
+//     #[inline]
+//     fn hours_at_least<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u32, Numer, Denom> {
+//         Duration::<u32, Numer, Denom>::hours_at_least(self)
+//     }
+// }
+//
+// /// Extension trait for simple short-hands for u64 Durations
+// pub trait ExtU64 {
+//     /// Shorthand for creating a duration which represents nanoseconds.
+//     fn nanos<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u64, Numer, Denom>;
+//
+//     /// Shorthand for creating a duration which represents microseconds.
+//     fn micros<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u64, Numer, Denom>;
+//
+//     /// Shorthand for creating a duration which represents milliseconds.
+//     fn millis<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u64, Numer, Denom>;
+//
+//     /// Shorthand for creating a duration which represents seconds.
+//     fn secs<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u64, Numer, Denom>;
+//
+//     /// Shorthand for creating a duration which represents minutes.
+//     fn minutes<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u64, Numer, Denom>;
+//
+//     /// Shorthand for creating a duration which represents hours.
+//     fn hours<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u64, Numer, Denom>;
+// }
+//
+// impl ExtU64 for u64 {
+//     #[inline]
+//     fn nanos<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u64, Numer, Denom> {
+//         Duration::<u64, Numer, Denom>::nanos(self)
+//     }
+//
+//     #[inline]
+//     fn micros<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u64, Numer, Denom> {
+//         Duration::<u64, Numer, Denom>::micros(self)
+//     }
+//
+//     #[inline]
+//     fn millis<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u64, Numer, Denom> {
+//         Duration::<u64, Numer, Denom>::millis(self)
+//     }
+//
+//     #[inline]
+//     fn secs<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u64, Numer, Denom> {
+//         Duration::<u64, Numer, Denom>::secs(self)
+//     }
+//
+//     #[inline]
+//     fn minutes<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u64, Numer, Denom> {
+//         Duration::<u64, Numer, Denom>::minutes(self)
+//     }
+//
+//     #[inline]
+//     fn hours<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u64, Numer, Denom> {
+//         Duration::<u64, Numer, Denom>::hours(self)
+//     }
+// }
+//
+// /// Extension trait for simple short-hands for u64 Durations (ceil rounded)
+// pub trait ExtU64Ceil {
+//     /// Shorthand for creating a duration which represents nanoseconds.
+//     fn nanos_at_least<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u64, Numer, Denom>;
+//
+//     /// Shorthand for creating a duration which represents microseconds.
+//     fn micros_at_least<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u64, Numer, Denom>;
+//
+//     /// Shorthand for creating a duration which represents milliseconds.
+//     fn millis_at_least<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u64, Numer, Denom>;
+//
+//     /// Shorthand for creating a duration which represents seconds.
+//     fn secs_at_least<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u64, Numer, Denom>;
+//
+//     /// Shorthand for creating a duration which represents minutes.
+//     fn minutes_at_least<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u64, Numer, Denom>;
+//
+//     /// Shorthand for creating a duration which represents hours.
+//     fn hours_at_least<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u64, Numer, Denom>;
+// }
+//
+// impl ExtU64Ceil for u64 {
+//     #[inline]
+//     fn nanos_at_least<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u64, Numer, Denom> {
+//         Duration::<u64, Numer, Denom>::nanos_at_least(self)
+//     }
+//
+//     #[inline]
+//     fn micros_at_least<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u64, Numer, Denom> {
+//         Duration::<u64, Numer, Denom>::micros_at_least(self)
+//     }
+//
+//     #[inline]
+//     fn millis_at_least<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u64, Numer, Denom> {
+//         Duration::<u64, Numer, Denom>::millis_at_least(self)
+//     }
+//
+//     #[inline]
+//     fn secs_at_least<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u64, Numer, Denom> {
+//         Duration::<u64, Numer, Denom>::secs_at_least(self)
+//     }
+//
+//     #[inline]
+//     fn minutes_at_least<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u64, Numer, Denom> {
+//         Duration::<u64, Numer, Denom>::minutes_at_least(self)
+//     }
+//
+//     #[inline]
+//     fn hours_at_least<Numer: Unsigned, Denom: Unsigned + NonZero>(self) -> Duration<u64, Numer, Denom> {
+//         Duration::<u64, Numer, Denom>::hours_at_least(self)
+//     }
+// }
