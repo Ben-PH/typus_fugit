@@ -1,3 +1,5 @@
+use typenum::{NonZero, Unsigned};
+
 use crate::helpers::{self, Helpers};
 use crate::Rate;
 use core::cmp::Ordering;
@@ -9,7 +11,7 @@ use core::ops;
 /// The generic `T` can either be `u32` or `u64`, and the const generics represent the ratio of the
 /// ticks contained within the duration: `duration in seconds = NOM / DENOM * ticks`
 #[derive(Clone, Copy, Debug)]
-pub struct Duration<T, const NOM: u32, const DENOM: u32> {
+pub struct Duration<T, Numer: Unsigned, Denom: Unsigned + NonZero> {
     pub(crate) ticks: T,
 }
 
@@ -18,24 +20,24 @@ macro_rules! shorthand {
         #[doc = concat!("Convert the Duration to an integer number of ", $unitstr, ".")]
         #[inline]
         pub const fn $to_unit(&self) -> $i {
-            (Helpers::<$nom, $denum, NOM, DENOM>::LD_TIMES_RN as $i * self.ticks)
-                / Helpers::<$nom, $denum, NOM, DENOM>::RD_TIMES_LN as $i
+            (Helpers::<$nom, $denum, Numer, Denom>::LD_TIMES_RN as $i * self.ticks)
+                / Helpers::<$nom, $denum, Numer, Denom>::RD_TIMES_LN as $i
         }
 
         #[doc = concat!("Shorthand for creating a duration which represents ", $unitstr, ".")]
         #[inline]
         pub const fn $unit(val: $i) -> Self {
             Self::from_ticks(
-                (Helpers::<$nom, $denum, NOM, DENOM>::RD_TIMES_LN as $i * val)
-                    / Helpers::<$nom, $denum, NOM, DENOM>::LD_TIMES_RN as $i
+                (Helpers::<$nom, $denum, Numer, Denom>::RD_TIMES_LN as $i * val)
+                    / Helpers::<$nom, $denum, Numer, Denom>::LD_TIMES_RN as $i
             )
         }
 
         #[doc = concat!("Shorthand for creating a duration which represents ", $unitstr, " (ceil rounded).")]
         #[inline]
         pub const fn $unital(val: $i) -> Self {
-            let mul = Helpers::<$nom, $denum, NOM, DENOM>::RD_TIMES_LN as $i * val;
-            let ld_times_rn = Helpers::<$nom, $denum, NOM, DENOM>::LD_TIMES_RN as $i;
+            let mul = Helpers::<$nom, $denum, Numer, Denom>::RD_TIMES_LN as $i * val;
+            let ld_times_rn = Helpers::<$nom, $denum, Numer, Denom>::LD_TIMES_RN as $i;
             Self::from_ticks(if mul % ld_times_rn == 0 {
                 mul / ld_times_rn
             } else {
@@ -47,7 +49,7 @@ macro_rules! shorthand {
 
 macro_rules! impl_duration_for_integer {
     ($i:ty) => {
-        impl<const NOM: u32, const DENOM: u32> Duration<$i, NOM, DENOM> {
+        impl<Numer: Unsigned, Denom: Unsigned + NonZero> Duration<$i, Numer, Denom> {
             /// Create a `Duration` from a ticks value.
             ///
             /// ```
@@ -56,9 +58,6 @@ macro_rules! impl_duration_for_integer {
             /// ```
             #[inline]
             pub const fn from_ticks(ticks: $i) -> Self {
-                helpers::greater_than_0::<NOM>();
-                helpers::greater_than_0::<DENOM>();
-
                 Duration { ticks }
             }
 
@@ -101,25 +100,25 @@ macro_rules! impl_duration_for_integer {
             /// assert_eq!(d1.checked_add(d2).unwrap().ticks(), 3);
             /// assert_eq!(d1.checked_add(d3), None);
             /// ```
-            pub const fn checked_add<const O_NOM: u32, const O_DENOM: u32>(
+            pub const fn checked_add<ONumer, ODenom>(
                 self,
-                other: Duration<$i, O_NOM, O_DENOM>,
+                other: Duration<$i, ONumer, ODenom>,
             ) -> Option<Self> {
-                if Helpers::<NOM, DENOM, O_NOM, O_DENOM>::SAME_BASE {
+                if Helpers::<Numer, Denom, ONumer, ODenom>::SAME_BASE {
                     if let Some(ticks) = self.ticks.checked_add(other.ticks) {
-                        Some(Duration::<$i, NOM, DENOM>::from_ticks(ticks))
+                        Some(Duration::<$i, Numer, Denom>::from_ticks(ticks))
                     } else {
                         None
                     }
                 } else {
                     if let Some(lh) = other
                         .ticks
-                        .checked_mul(Helpers::<NOM, DENOM, O_NOM, O_DENOM>::LD_TIMES_RN as $i)
+                        .checked_mul(Helpers::<Numer, Denom, ONumer, ODenom>::LD_TIMES_RN as $i)
                     {
-                        let ticks = lh / Helpers::<NOM, DENOM, O_NOM, O_DENOM>::RD_TIMES_LN as $i;
+                        let ticks = lh / Helpers::<Numer, Denom, ONumer, ODenom>::RD_TIMES_LN as $i;
 
                         if let Some(ticks) = self.ticks.checked_add(ticks) {
-                            Some(Duration::<$i, NOM, DENOM>::from_ticks(ticks))
+                            Some(Duration::<$i, Numer, Denom>::from_ticks(ticks))
                         } else {
                             None
                         }
@@ -140,25 +139,25 @@ macro_rules! impl_duration_for_integer {
             /// assert_eq!(d2.checked_sub(d1).unwrap().ticks(), 1);
             /// assert_eq!(d1.checked_sub(d3), None);
             /// ```
-            pub const fn checked_sub<const O_NOM: u32, const O_DENOM: u32>(
+            pub const fn checked_sub<ONumer, ODenom>(
                 self,
-                other: Duration<$i, O_NOM, O_DENOM>,
+                other: Duration<$i, ONumer, ODenom>,
             ) -> Option<Self> {
-                if Helpers::<NOM, DENOM, O_NOM, O_DENOM>::SAME_BASE {
+                if Helpers::<Numer, Denom, ONumer, ODenom>::SAME_BASE {
                     if let Some(ticks) = self.ticks.checked_sub(other.ticks) {
-                        Some(Duration::<$i, NOM, DENOM>::from_ticks(ticks))
+                        Some(Duration::<$i, Numer, Denom>::from_ticks(ticks))
                     } else {
                         None
                     }
                 } else {
                     if let Some(lh) = other
                         .ticks
-                        .checked_mul(Helpers::<NOM, DENOM, O_NOM, O_DENOM>::LD_TIMES_RN as $i)
+                        .checked_mul(Helpers::<Numer, Denom, ONumer, ODenom>::LD_TIMES_RN as $i)
                     {
-                        let ticks = lh / Helpers::<NOM, DENOM, O_NOM, O_DENOM>::RD_TIMES_LN as $i;
+                        let ticks = lh / Helpers::<Numer, Denom, ONumer, ODenom>::RD_TIMES_LN as $i;
 
                         if let Some(ticks) = self.ticks.checked_sub(ticks) {
-                            Some(Duration::<$i, NOM, DENOM>::from_ticks(ticks))
+                            Some(Duration::<$i, Numer, Denom>::from_ticks(ticks))
                         } else {
                             None
                         }
@@ -190,9 +189,9 @@ macro_rules! impl_duration_for_integer {
             /// assert_eq!(d1.const_partial_cmp(d2), Some(core::cmp::Ordering::Greater));
             /// ```
             #[inline]
-            pub const fn const_partial_cmp<const R_NOM: u32, const R_DENOM: u32>(
+            pub const fn const_partial_cmp<RNumer, RDenom>(
                 self,
-                other: Duration<$i, R_NOM, R_DENOM>
+                other: Duration<$i, RNumer, RDenom>
             ) -> Option<Ordering> {
                 //
                 // We want to check:
@@ -209,16 +208,16 @@ macro_rules! impl_duration_for_integer {
                 // then perform the comparison in a comparable basis
                 //
 
-                if Helpers::<NOM, DENOM, R_NOM, R_DENOM>::SAME_BASE {
+                if Helpers::<Numer, Denom, RNumer, RDenom>::SAME_BASE {
                     // If we are in the same base, comparison in trivial
                     Some(Self::_const_cmp(self.ticks, other.ticks))
                 } else {
                     let lh = self
                         .ticks
-                        .checked_mul(Helpers::<NOM, DENOM, R_NOM, R_DENOM>::RD_TIMES_LN as $i);
+                        .checked_mul(Helpers::<Numer, Denom, RNumer, RDenom>::RD_TIMES_LN as $i);
                     let rh = other
                         .ticks
-                        .checked_mul(Helpers::<NOM, DENOM, R_NOM, R_DENOM>::LD_TIMES_RN as $i);
+                        .checked_mul(Helpers::<Numer, Denom, RNumer, RDenom>::LD_TIMES_RN as $i);
 
                     if let (Some(lh), Some(rh)) = (lh, rh) {
                         Some(Self::_const_cmp(lh, rh))
@@ -238,20 +237,20 @@ macro_rules! impl_duration_for_integer {
             /// assert!(d1.const_eq(d2));
             /// ```
             #[inline]
-            pub const fn const_eq<const R_NOM: u32, const R_DENOM: u32>(
+            pub const fn const_eq<RNumer, RDenom>(
                 self,
-                other: Duration<$i, R_NOM, R_DENOM>
+                other: Duration<$i, RNumer, RDenom>
             ) -> bool {
-                if Helpers::<NOM, DENOM, R_NOM, R_DENOM>::SAME_BASE {
+                if Helpers::<Numer, Denom, RNumer, RDenom>::SAME_BASE {
                     // If we are in the same base, comparison in trivial
                     self.ticks == other.ticks
                 } else {
                     let lh = self
                         .ticks
-                        .checked_mul(Helpers::<NOM, DENOM, R_NOM, R_DENOM>::RD_TIMES_LN as $i);
+                        .checked_mul(Helpers::<Numer, Denom, RNumer, RDenom>::RD_TIMES_LN as $i);
                     let rh = other
                         .ticks
-                        .checked_mul(Helpers::<NOM, DENOM, R_NOM, R_DENOM>::LD_TIMES_RN as $i);
+                        .checked_mul(Helpers::<Numer, Denom, RNumer, RDenom>::LD_TIMES_RN as $i);
 
                     if let (Some(lh), Some(rh)) = (lh, rh) {
                         lh == rh
@@ -270,16 +269,16 @@ macro_rules! impl_duration_for_integer {
             ///
             /// assert_eq!(d2.unwrap().ticks(), 10);
             /// ```
-            pub const fn const_try_from<const I_NOM: u32, const I_DENOM: u32>(
-                duration: Duration<$i, I_NOM, I_DENOM>,
+            pub const fn const_try_from<INumer, IDenom>(
+                duration: Duration<$i, INumer, IDenom>,
             ) -> Option<Self> {
-                if Helpers::<I_NOM, I_DENOM, NOM, DENOM>::SAME_BASE {
+                if Helpers::<INumer, IDenom, Numer, Denom>::SAME_BASE {
                     Some(Self::from_ticks(duration.ticks))
                 } else {
                     if let Some(lh) = (duration.ticks as u64)
-                        .checked_mul(Helpers::<I_NOM, I_DENOM, NOM, DENOM>::RD_TIMES_LN as u64)
+                        .checked_mul(Helpers::<INumer, IDenom, Numer, Denom>::RD_TIMES_LN as u64)
                     {
-                        let ticks = lh / Helpers::<I_NOM, I_DENOM, NOM, DENOM>::LD_TIMES_RN as u64;
+                        let ticks = lh / Helpers::<INumer, IDenom, Numer, Denom>::LD_TIMES_RN as u64;
 
                         if ticks <= <$i>::MAX as u64 {
                             Some(Self::from_ticks(ticks as $i))
@@ -302,10 +301,10 @@ macro_rules! impl_duration_for_integer {
             /// assert_eq!(d2.unwrap().ticks(), 10);
             /// ```
             #[inline]
-            pub const fn const_try_into<const O_NOM: u32, const O_DENOM: u32>(
+            pub const fn const_try_into<ONumer, ODenom>(
                 self,
-            ) -> Option<Duration<$i, O_NOM, O_DENOM>> {
-                Duration::<$i, O_NOM, O_DENOM>::const_try_from(self)
+            ) -> Option<Duration<$i, ONumer, ODenom>> {
+                Duration::<$i, ONumer, ODenom>::const_try_from(self)
             }
 
             /// Const try into rate, checking for divide-by-zero.
@@ -346,12 +345,12 @@ macro_rules! impl_duration_for_integer {
             /// assert_eq!(d1.unwrap().ticks(), 1_000);
             /// ```
             #[inline]
-            pub const fn try_from_rate<const I_NOM: u32, const I_DENOM: u32>(
-                rate: Rate<$i, I_NOM, I_DENOM>,
+            pub const fn try_from_rate<INumer, IDenom>(
+                rate: Rate<$i, INumer, IDenom>,
             ) -> Option<Self> {
                 if rate.raw > 0 {
                     Some(Self::from_ticks(
-                        Helpers::<I_NOM, I_DENOM, NOM, DENOM>::RATE_TO_DURATION_NUMERATOR as $i
+                        Helpers::<INumer, IDenom, Numer, Denom>::RATE_TO_DURATION_NUMERATOR as $i
                         / rate.raw
                     ))
                 } else {
@@ -390,9 +389,9 @@ macro_rules! impl_duration_for_integer {
             /// // Fails conversion due to tick overflow
             #[doc = concat!("const D2: Duration::<", stringify!($i), ", 1, 200> = D1.convert();")]
             #[inline]
-            pub const fn convert<const O_NOM: u32, const O_DENOM: u32>(
+            pub const fn convert<ONumer, ODenom>(
                 self,
-            ) -> Duration<$i, O_NOM, O_DENOM> {
+            ) -> Duration<$i, ONumer, ODenom> {
                 if let Some(v) = self.const_try_into() {
                     v
                 } else {
@@ -429,192 +428,243 @@ macro_rules! impl_duration_for_integer {
             }
         }
 
-        impl<const L_NOM: u32, const L_DENOM: u32, const R_NOM: u32, const R_DENOM: u32>
-            PartialOrd<Duration<$i, R_NOM, R_DENOM>> for Duration<$i, L_NOM, L_DENOM>
-        {
-            #[inline]
-            fn partial_cmp(&self, other: &Duration<$i, R_NOM, R_DENOM>) -> Option<Ordering> {
-                self.const_partial_cmp(*other)
-            }
-        }
+        // impl<const L_NOM: u32, const L_DENOM: u32, const R_NOM: u32, const R_DENOM: u32>
+        //     PartialOrd<Duration<$i, R_NOM, R_DENOM>> for Duration<$i, L_NOM, L_DENOM>
+        // {
+        //     #[inline]
+        //     fn partial_cmp(&self, other: &Duration<$i, R_NOM, R_DENOM>) -> Option<Ordering> {
+        //         self.const_partial_cmp(*other)
+        //     }
+        // }
 
-        impl<const NOM: u32, const DENOM: u32> Ord for Duration<$i, NOM, DENOM> {
-            #[inline]
-            fn cmp(&self, other: &Self) -> Ordering {
-                Self::_const_cmp(self.ticks, other.ticks)
-            }
-        }
+        // impl<const NOM: u32, const DENOM: u32> Ord for Duration<$i, NOM, DENOM> {
+        //     #[inline]
+        //     fn cmp(&self, other: &Self) -> Ordering {
+        //         Self::_const_cmp(self.ticks, other.ticks)
+        //     }
+        // }
 
-        impl<const L_NOM: u32, const L_DENOM: u32, const R_NOM: u32, const R_DENOM: u32>
-            PartialEq<Duration<$i, R_NOM, R_DENOM>> for Duration<$i, L_NOM, L_DENOM>
-        {
-            #[inline]
-            fn eq(&self, other: &Duration<$i, R_NOM, R_DENOM>) -> bool {
-                self.const_eq(*other)
-            }
-        }
+        // impl<const L_NOM: u32, const L_DENOM: u32, const R_NOM: u32, const R_DENOM: u32>
+        //     PartialEq<Duration<$i, R_NOM, R_DENOM>> for Duration<$i, L_NOM, L_DENOM>
+        // {
+        //     #[inline]
+        //     fn eq(&self, other: &Duration<$i, R_NOM, R_DENOM>) -> bool {
+        //         self.const_eq(*other)
+        //     }
+        // }
 
-        impl<const NOM: u32, const DENOM: u32> Eq for Duration<$i, NOM, DENOM> {}
+        // impl<const NOM: u32, const DENOM: u32> Eq for Duration<$i, NOM, DENOM> {}
 
-        // Duration - Duration = Duration (only same base until const_generics_defaults is
-        // stabilized)
-        impl<const NOM: u32, const DENOM: u32> ops::Sub<Duration<$i, NOM, DENOM>>
-            for Duration<$i, NOM, DENOM>
-        {
-            type Output = Duration<$i, NOM, DENOM>;
+        // // Duration - Duration = Duration (only same base until const_generics_defaults is
+        // // stabilized)
+        // impl<const NOM: u32, const DENOM: u32> ops::Sub<Duration<$i, NOM, DENOM>>
+        //     for Duration<$i, NOM, DENOM>
+        // {
+        //     type Output = Duration<$i, NOM, DENOM>;
 
-            #[inline]
-            fn sub(self, other: Duration<$i, NOM, DENOM>) -> Self::Output {
-                if let Some(v) = self.checked_sub(other) {
-                    v
-                } else {
-                    panic!("Sub failed!");
-                }
-            }
-        }
+        //     #[inline]
+        //     fn sub(self, other: Duration<$i, NOM, DENOM>) -> Self::Output {
+        //         if let Some(v) = self.checked_sub(other) {
+        //             v
+        //         } else {
+        //             panic!("Sub failed!");
+        //         }
+        //     }
+        // }
 
-        // Duration -= Duration
-        impl<const NOM: u32, const DENOM: u32> ops::SubAssign<Duration<$i, NOM, DENOM>>
-            for Duration<$i, NOM, DENOM>
-        {
-            #[inline]
-            fn sub_assign(&mut self, other: Self) {
-                *self = *self - other;
-            }
-        }
+        // // Duration -= Duration
+        // impl<const NOM: u32, const DENOM: u32> ops::SubAssign<Duration<$i, NOM, DENOM>>
+        //     for Duration<$i, NOM, DENOM>
+        // {
+        //     #[inline]
+        //     fn sub_assign(&mut self, other: Self) {
+        //         *self = *self - other;
+        //     }
+        // }
 
-        // Duration + Duration = Duration (only same base until const_generics_defaults is
-        // stabilized)
-        impl<const NOM: u32, const DENOM: u32> ops::Add<Duration<$i, NOM, DENOM>>
-            for Duration<$i, NOM, DENOM>
-        {
-            type Output = Duration<$i, NOM, DENOM>;
+        // // Duration + Duration = Duration (only same base until const_generics_defaults is
+        // // stabilized)
+        // impl<const NOM: u32, const DENOM: u32> ops::Add<Duration<$i, NOM, DENOM>>
+        //     for Duration<$i, NOM, DENOM>
+        // {
+        //     type Output = Duration<$i, NOM, DENOM>;
 
-            #[inline]
-            fn add(self, other: Duration<$i, NOM, DENOM>) -> Self::Output {
-                if let Some(v) = self.checked_add(other) {
-                    v
-                } else {
-                    panic!("Add failed!");
-                }
-            }
-        }
+        //     #[inline]
+        //     fn add(self, other: Duration<$i, NOM, DENOM>) -> Self::Output {
+        //         if let Some(v) = self.checked_add(other) {
+        //             v
+        //         } else {
+        //             panic!("Add failed!");
+        //         }
+        //     }
+        // }
 
-        // Duration += Duration
-        impl<const NOM: u32, const DENOM: u32> ops::AddAssign<Duration<$i, NOM, DENOM>>
-            for Duration<$i, NOM, DENOM>
-        {
-            #[inline]
-            fn add_assign(&mut self, other: Self) {
-                *self = *self + other;
-            }
-        }
+        // // Duration += Duration
+        // impl<const NOM: u32, const DENOM: u32> ops::AddAssign<Duration<$i, NOM, DENOM>>
+        //     for Duration<$i, NOM, DENOM>
+        // {
+        //     #[inline]
+        //     fn add_assign(&mut self, other: Self) {
+        //         *self = *self + other;
+        //     }
+        // }
 
-        // integer * Duration = Duration
-        impl<const NOM: u32, const DENOM: u32> ops::Mul<Duration<$i, NOM, DENOM>> for u32 {
-            type Output = Duration<$i, NOM, DENOM>;
+        // // integer * Duration = Duration
+        // impl<const NOM: u32, const DENOM: u32> ops::Mul<Duration<$i, NOM, DENOM>> for u32 {
+        //     type Output = Duration<$i, NOM, DENOM>;
 
-            #[inline]
-            fn mul(self, mut other: Duration<$i, NOM, DENOM>) -> Self::Output {
-                other.ticks *= self as $i;
-                other
-            }
-        }
+        //     #[inline]
+        //     fn mul(self, mut other: Duration<$i, NOM, DENOM>) -> Self::Output {
+        //         other.ticks *= self as $i;
+        //         other
+        //     }
+        // }
 
-        // Duration * integer = Duration
-        impl<const NOM: u32, const DENOM: u32> ops::Mul<u32> for Duration<$i, NOM, DENOM> {
-            type Output = Duration<$i, NOM, DENOM>;
+        // // Duration * integer = Duration
+        // impl<const NOM: u32, const DENOM: u32> ops::Mul<u32> for Duration<$i, NOM, DENOM> {
+        //     type Output = Duration<$i, NOM, DENOM>;
 
-            #[inline]
-            fn mul(mut self, other: u32) -> Self::Output {
-                self.ticks *= other as $i;
-                self
-            }
-        }
+        //     #[inline]
+        //     fn mul(mut self, other: u32) -> Self::Output {
+        //         self.ticks *= other as $i;
+        //         self
+        //     }
+        // }
 
-        // Duration *= integer
-        impl<const NOM: u32, const DENOM: u32> ops::MulAssign<u32>
-            for Duration<$i, NOM, DENOM>
-        {
-            #[inline]
-            fn mul_assign(&mut self, other: u32) {
-                *self = *self * other;
-            }
-        }
+        // // Duration *= integer
+        // impl<const NOM: u32, const DENOM: u32> ops::MulAssign<u32>
+        //     for Duration<$i, NOM, DENOM>
+        // {
+        //     #[inline]
+        //     fn mul_assign(&mut self, other: u32) {
+        //         *self = *self * other;
+        //     }
+        // }
 
-        // Duration / integer = Duration
-        impl<const NOM: u32, const DENOM: u32> ops::Div<u32> for Duration<$i, NOM, DENOM> {
-            type Output = Duration<$i, NOM, DENOM>;
+        // // Duration / integer = Duration
+        // impl<const NOM: u32, const DENOM: u32> ops::Div<u32> for Duration<$i, NOM, DENOM> {
+        //     type Output = Duration<$i, NOM, DENOM>;
 
-            #[inline]
-            fn div(mut self, other: u32) -> Self::Output {
-                self.ticks /= other as $i;
-                self
-            }
-        }
+        //     #[inline]
+        //     fn div(mut self, other: u32) -> Self::Output {
+        //         self.ticks /= other as $i;
+        //         self
+        //     }
+        // }
 
-        // Duration /= integer
-        impl<const NOM: u32, const DENOM: u32> ops::DivAssign<u32>
-            for Duration<$i, NOM, DENOM>
-        {
-            #[inline]
-            fn div_assign(&mut self, other: u32) {
-                *self = *self / other;
-            }
-        }
+        // // Duration /= integer
+        // impl<const NOM: u32, const DENOM: u32> ops::DivAssign<u32>
+        //     for Duration<$i, NOM, DENOM>
+        // {
+        //     #[inline]
+        //     fn div_assign(&mut self, other: u32) {
+        //         *self = *self / other;
+        //     }
+        // }
 
-        // Duration / Duration = integer
-        impl<const L_NOM: u32, const L_DENOM: u32, const R_NOM: u32, const R_DENOM: u32> ops::Div<Duration<$i, R_NOM, R_DENOM>>
-            for Duration<$i, L_NOM, L_DENOM>
-        {
-            type Output = $i;
+        // // Duration / Duration = integer
+        // impl<const L_NOM: u32, const L_DENOM: u32, const R_NOM: u32, const R_DENOM: u32> ops::Div<Duration<$i, R_NOM, R_DENOM>>
+        //     for Duration<$i, L_NOM, L_DENOM>
+        // {
+        //     type Output = $i;
 
-            #[inline]
-            fn div(self, other: Duration<$i, R_NOM, R_DENOM>) -> Self::Output {
-                let conv: Duration<$i, R_NOM, R_DENOM> = self.convert();
-                conv.ticks / other.ticks
-            }
-        }
+        //     #[inline]
+        //     fn div(self, other: Duration<$i, R_NOM, R_DENOM>) -> Self::Output {
+        //         let conv: Duration<$i, R_NOM, R_DENOM> = self.convert();
+        //         conv.ticks / other.ticks
+        //     }
+        // }
 
         #[cfg(feature = "defmt")]
-        impl<const NOM: u32, const DENOM: u32> defmt::Format for Duration<$i, NOM, DENOM>
+        impl<$i> defmt::Format for Duration<$i, typenum::U3600, typenum::U1>
         {
             fn format(&self, f: defmt::Formatter) {
-                if NOM == 3_600 && DENOM == 1 {
-                    defmt::write!(f, "{} h", self.ticks)
-                } else if NOM == 60 && DENOM == 1 {
-                    defmt::write!(f, "{} min", self.ticks)
-                } else if NOM == 1 && DENOM == 1 {
-                    defmt::write!(f, "{} s", self.ticks)
-                } else if NOM == 1 && DENOM == 1_000 {
-                    defmt::write!(f, "{} ms", self.ticks)
-                } else if NOM == 1 && DENOM == 1_000_000 {
-                    defmt::write!(f, "{} us", self.ticks)
-                } else if NOM == 1 && DENOM == 1_000_000_000 {
-                    defmt::write!(f, "{} ns", self.ticks)
-                } else {
-                    defmt::write!(f, "{} ticks @ ({}/{})", self.ticks, NOM, DENOM)
-                }
+                defmt::write!(f, "{} h", self.ticks)
+            }
+        }
+        #[cfg(feature = "defmt")]
+        impl<$i> defmt::Format for Duration<$i, typenum::U60, typenum::U1>
+        {
+            fn format(&self, f: defmt::Formatter) {
+                defmt::write!(f, "{} min", self.ticks)
+            }
+        }
+        #[cfg(feature = "defmt")]
+        impl<$i> defmt::Format for Duration<$i, typenum::U1, typenum::U1>
+        {
+            fn format(&self, f: defmt::Formatter) {
+                defmt::write!(f, "{} s", self.ticks)
+            }
+        }
+        #[cfg(feature = "defmt")]
+        impl<$i> defmt::Format for Duration<$i, typenum::U1, typenum::U1000>
+        {
+            fn format(&self, f: defmt::Formatter) {
+                defmt::write!(f, "{} ms", self.ticks)
+            }
+        }
+        #[cfg(feature = "defmt")]
+        impl<$i> defmt::Format for Duration<$i, typenum::U1, typenum::U1000000>
+        {
+            fn format(&self, f: defmt::Formatter) {
+                defmt::write!(f, "{} μs", self.ticks)
+            }
+        }
+        #[cfg(feature = "defmt")]
+        impl<$i> defmt::Format for Duration<$i, typenum::U1, typenum::U1000000999>
+        {
+            fn format(&self, f: defmt::Formatter) {
+                defmt::write!(f, "{} ns", self.ticks)
+            }
+        }
+        #[cfg(feature = "defmt")]
+        impl<$i, Numer, Denom> defmt::Format for Duration<$i, Numer, Denom>
+        {
+            fn format(&self, f: defmt::Formatter) {
+                defmt::write!(f, "{} ticks @ ({}/{})", self.ticks, Numer::U64, Denom::U64)
             }
         }
 
-        impl<const NOM: u32, const DENOM: u32> core::fmt::Display for Duration<$i, NOM, DENOM> {
-            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                if NOM == 3_600 && DENOM == 1 {
-                    write!(f, "{} h", self.ticks)
-                } else if NOM == 60 && DENOM == 1 {
-                    write!(f, "{} min", self.ticks)
-                } else if NOM == 1 && DENOM == 1 {
-                    write!(f, "{} s", self.ticks)
-                } else if NOM == 1 && DENOM == 1_000 {
-                    write!(f, "{} ms", self.ticks)
-                } else if NOM == 1 && DENOM == 1_000_000 {
-                    write!(f, "{} us", self.ticks)
-                } else if NOM == 1 && DENOM == 1_000_000_000 {
-                    write!(f, "{} ns", self.ticks)
-                } else {
-                    write!(f, "{} ticks @ ({}/{})", self.ticks, NOM, DENOM)
-                }
+        impl<$i> core::fmt::Display for Duration<$i, typenum::U3600, typenum::U1>
+        {
+            fn format(&self, f: core::fmt::Formatter<'_>) -> core::fmt::Result {
+                write!(f, "{} h", self.ticks)
+            }
+        }
+        impl<$i> defmt::Format for Duration<$i, typenum::U60, typenum::U1>
+        {
+            fn format(&self, f: core::fmt::Formatter<'_>) -> core::fmt::Result {
+                write!(f, "{} min", self.ticks)
+            }
+        }
+        impl<$i> defmt::Format for Duration<$i, typenum::U1, typenum::U1>
+        {
+            fn format(&self, f: core::fmt::Formatter<'_>) -> core::fmt::Result {
+                write!(f, "{} s", self.ticks)
+            }
+        }
+        impl<$i> defmt::Format for Duration<$i, typenum::U1, typenum::U1000>
+        {
+            fn format(&self, f: core::fmt::Formatter<'_>) -> core::fmt::Result {
+                write!(f, "{} ms", self.ticks)
+            }
+        }
+        impl<$i> defmt::Format for Duration<$i, typenum::U1, typenum::U1000000>
+        {
+            fn format(&self, f: core::fmt::Formatter<'_>) -> core::fmt::Result {
+                write!(f, "{} μs", self.ticks)
+            }
+        }
+        impl<$i> defmt::Format for Duration<$i, typenum::U1, typenum::U1000000999>
+        {
+            fn format(&self, f: core::fmt::Formatter<'_>) -> core::fmt::Result {
+                write!(f, "{} ns", self.ticks)
+            }
+        }
+        impl<$i, Numer, Denom> defmt::Format for Duration<$i, Numer, Denom>
+        {
+            fn format(&self, f: core::fmt::Formatter<'_>) -> core::fmt::Result {
+                write!(f, "{} ticks @ ({}/{})", self.ticks, Numer::U64, Denom::U64)
             }
         }
     };
