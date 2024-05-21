@@ -375,6 +375,7 @@ macro_rules! impl_duration_for_integer {
             /// Convert between bases for a duration.
             ///
             /// Unfortunately not a `From` impl due to collision with the std lib.
+            /// UPDATE v0.4.0: use of typenum instead of const generics may allow for this now.
             ///
             /// ```
             /// # use fugit::*;
