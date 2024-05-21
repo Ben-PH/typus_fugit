@@ -430,7 +430,7 @@ impl<Numer: Unsigned, Denom: Unsigned + NonZero> ops::AddAssign<Duration<u32, Nu
 //     ops::Add<Duration<u32, RNumer, RDenom>> for Duration<u64, LNumer, LDenom>
 // {
 //     type Output = Duration<u64, LNumer, LDenom>;
-// 
+//
 //     #[inline]
 //     fn add(self, other: Duration<u32, RNumer, RDenom>) -> Self::Output {
 //         self.add(Duration::<u64, LNumer, LDenom>::from_ticks(
