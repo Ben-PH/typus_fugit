@@ -1,5 +1,5 @@
 use crate::duration::Duration;
-use crate::helpers::{self, Helpers};
+use crate::helpers::Helpers;
 use core::cmp::Ordering;
 use core::marker::PhantomData;
 use core::ops;
@@ -23,7 +23,7 @@ macro_rules! impl_instant_for_integer {
             ///
             /// ```
             /// # use fugit::*;
-            #[doc = concat!("let i = Instant::<", stringify!($i), ", 1, 1_000>::from_ticks(234);")]
+            #[doc = concat!("let i = Instant::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(234);")]
             ///
             /// assert_eq!(i.ticks(), 234);
             /// ```
@@ -38,7 +38,7 @@ macro_rules! impl_instant_for_integer {
             ///
             /// ```
             /// # use fugit::*;
-            #[doc = concat!("let _i = Instant::<", stringify!($i), ", 1, 1_000>::from_ticks(1);")]
+            #[doc = concat!("let _i = Instant::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(1);")]
             /// ```
             #[inline]
             pub const fn from_ticks(ticks: $i) -> Self {
@@ -49,8 +49,8 @@ macro_rules! impl_instant_for_integer {
             ///
             /// ```
             /// # use fugit::*;
-            #[doc = concat!("let i1 = Instant::<", stringify!($i), ", 1, 1_000>::from_ticks(1);")]
-            #[doc = concat!("let i2 = Instant::<", stringify!($i), ", 1, 1_000>::from_ticks(2);")]
+            #[doc = concat!("let i1 = Instant::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(1);")]
+            #[doc = concat!("let i2 = Instant::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(2);")]
             ///
             /// assert_eq!(i1.const_cmp(i2), core::cmp::Ordering::Less);
             /// ```
@@ -61,8 +61,8 @@ macro_rules! impl_instant_for_integer {
             ///
             /// ```
             /// # use fugit::*;
-            #[doc = concat!("let i1 = Instant::<", stringify!($i), ", 1, 1_000>::from_ticks(", stringify!($i),"::MAX);")]
-            #[doc = concat!("let i2 = Instant::<", stringify!($i), ", 1, 1_000>::from_ticks(1);")]
+            #[doc = concat!("let i1 = Instant::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(", stringify!($i),"::MAX);")]
+            #[doc = concat!("let i2 = Instant::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(1);")]
             ///
             /// assert_eq!(i1.const_cmp(i2), core::cmp::Ordering::Less);
             /// ```
@@ -89,7 +89,7 @@ macro_rules! impl_instant_for_integer {
             ///
             /// ```
             /// # use fugit::*;
-            #[doc = concat!("let i = Instant::<", stringify!($i), ", 1, 1_000>::from_ticks(11);")]
+            #[doc = concat!("let i = Instant::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(11);")]
             ///
             /// assert_eq!(i.duration_since_epoch().ticks(), 11);
             /// ```
@@ -102,8 +102,8 @@ macro_rules! impl_instant_for_integer {
             ///
             /// ```
             /// # use fugit::*;
-            #[doc = concat!("let i1 = Instant::<", stringify!($i), ", 1, 1_000>::from_ticks(1);")]
-            #[doc = concat!("let i2 = Instant::<", stringify!($i), ", 1, 1_000>::from_ticks(2);")]
+            #[doc = concat!("let i1 = Instant::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(1);")]
+            #[doc = concat!("let i2 = Instant::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(2);")]
             ///
             /// assert_eq!(i1.checked_duration_since(i2), None);
             /// assert_eq!(i2.checked_duration_since(i1).unwrap().ticks(), 1);
@@ -127,8 +127,8 @@ macro_rules! impl_instant_for_integer {
             ///
             /// ```
             /// # use fugit::*;
-            #[doc = concat!("let i = Instant::<", stringify!($i), ", 1, 1_000>::from_ticks(1);")]
-            #[doc = concat!("let d = Duration::<", stringify!($i), ", 1, 1_000>::from_ticks(1);")]
+            #[doc = concat!("let i = Instant::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(1);")]
+            #[doc = concat!("let d = Duration::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(1);")]
             ///
             /// assert_eq!(i.checked_sub_duration(d).unwrap().ticks(), 0);
             /// ```
@@ -160,8 +160,8 @@ macro_rules! impl_instant_for_integer {
             ///
             /// ```
             /// # use fugit::*;
-            #[doc = concat!("let i = Instant::<", stringify!($i), ", 1, 1_000>::from_ticks(1);")]
-            #[doc = concat!("let d = Duration::<", stringify!($i), ", 1, 1_000>::from_ticks(1);")]
+            #[doc = concat!("let i = Instant::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(1);")]
+            #[doc = concat!("let d = Duration::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(1);")]
             ///
             /// assert_eq!(i.checked_add_duration(d).unwrap().ticks(), 2);
             /// ```
@@ -258,7 +258,7 @@ macro_rules! impl_instant_for_integer {
             type Output = Instant<$i, Numer, Denom>;
 
             #[inline]
-            fn sub(self, other: Duration<$i, Numer: Unsigned, Denom: Unsigned + NonZero>) -> Self::Output {
+            fn sub(self, other: Duration<$i, Numer, Denom>) -> Self::Output {
                 if let Some(v) = self.checked_sub_duration(other) {
                     v
                 } else {
