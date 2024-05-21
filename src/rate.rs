@@ -442,6 +442,7 @@ macro_rules! impl_rate_for_integer {
 
         // Rate - Rate = Rate (only same base until const_generics_defaults is
         // stabilized)
+        // UPDATE v0.4.0: With `typenum`, this should now be implementable
         impl<Numer: Unsigned, Denom:Unsigned + NonZero> ops::Sub<Rate<$i, Numer, Denom>>
             for Rate<$i, Numer, Denom>
         {
@@ -459,6 +460,7 @@ macro_rules! impl_rate_for_integer {
 
         // Rate + Rate = Rate (only same base until const_generics_defaults is
         // stabilized)
+        // UPDATE v0.4.0: With `typenum`, this should now be implementable
         impl<Numer: Unsigned, Denom:Unsigned + NonZero> ops::Add<Rate<$i, Numer, Denom>>
             for Rate<$i, Numer, Denom>
         {
@@ -617,6 +619,7 @@ impl<Numer: Unsigned, Denom: Unsigned + NonZero> convert::TryFrom<Rate<u64, Nume
 
 // Rate - Rate = Rate (to make shorthands work, until const_generics_defaults is
 // stabilized)
+// UPDATE v0.4.0: With `typenum`, this should now be implementable
 impl<Numer: Unsigned, Denom: Unsigned + NonZero> ops::Sub<Rate<u32, Numer, Denom>>
     for Rate<u64, Numer, Denom>
 {
@@ -633,6 +636,7 @@ impl<Numer: Unsigned, Denom: Unsigned + NonZero> ops::Sub<Rate<u32, Numer, Denom
 }
 
 // Rate -= Rate (to make shorthands work, until const_generics_defaults is stabilized)
+// UPDATE v0.4.0: With `typenum`, this should now be implementable
 impl<Numer: Unsigned, Denom: Unsigned + NonZero> ops::SubAssign<Rate<u32, Numer, Denom>>
     for Rate<u64, Numer, Denom>
 {
@@ -644,6 +648,7 @@ impl<Numer: Unsigned, Denom: Unsigned + NonZero> ops::SubAssign<Rate<u32, Numer,
 
 // Rate + Rate = Rate (to make shorthands work, until const_generics_defaults is
 // stabilized)
+// UPDATE v0.4.0: With `typenum`, this should now be implementable
 impl<Numer: Unsigned, Denom: Unsigned + NonZero> ops::Add<Rate<u32, Numer, Denom>>
     for Rate<u64, Numer, Denom>
 {
@@ -660,6 +665,7 @@ impl<Numer: Unsigned, Denom: Unsigned + NonZero> ops::Add<Rate<u32, Numer, Denom
 }
 
 // Rate += Rate (to make shorthands work, until const_generics_defaults is stabilized)
+// UPDATE v0.4.0: With `typenum`, this should now be implementable
 impl<Numer: Unsigned, Denom: Unsigned + NonZero> ops::AddAssign<Rate<u32, Numer, Denom>>
     for Rate<u64, Numer, Denom>
 {

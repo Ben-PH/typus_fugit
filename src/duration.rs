@@ -459,6 +459,7 @@ macro_rules! impl_duration_for_integer {
 
         // Duration - Duration = Duration (only same base until const_generics_defaults is
         // stabilized)
+        // UPDATE v0.4.0: With `typenum`, this should now be implementable
         impl<Numer: Unsigned, Denom: Unsigned + NonZero> ops::Sub<Duration<$i, Numer, Denom>>
             for Duration<$i, Numer, Denom>
         {
@@ -486,6 +487,7 @@ macro_rules! impl_duration_for_integer {
 
         // Duration + Duration = Duration (only same base until const_generics_defaults is
         // stabilized)
+        // UPDATE v0.4.0: With `typenum`, this should now be implementable
         impl<Numer: Unsigned, Denom: Unsigned + NonZero> ops::Add<Duration<$i, Numer, Denom>>
             for Duration<$i, Numer, Denom>
         {
@@ -652,6 +654,7 @@ impl<Numer: Unsigned, Denom: Unsigned + NonZero> convert::TryFrom<Duration<u64, 
 
 // Duration - Duration = Duration (to make shorthands work, until const_generics_defaults is
 // stabilized)
+// UPDATE v0.4.0: With `typenum`, this should now be implementable
 impl<Numer: Unsigned, Denom: Unsigned + NonZero> ops::Sub<Duration<u32, Numer, Denom>>
     for Duration<u64, Numer, Denom>
 {
@@ -670,6 +673,7 @@ impl<Numer: Unsigned, Denom: Unsigned + NonZero> ops::Sub<Duration<u32, Numer, D
 }
 
 // Duration -= Duration (to make shorthands work, until const_generics_defaults is stabilized)
+// UPDATE v0.4.0: With `typenum`, this should now be implementable
 impl<Numer: Unsigned, Denom: Unsigned + NonZero> ops::SubAssign<Duration<u32, Numer, Denom>>
     for Duration<u64, Numer, Denom>
 {
@@ -681,6 +685,7 @@ impl<Numer: Unsigned, Denom: Unsigned + NonZero> ops::SubAssign<Duration<u32, Nu
 
 // Duration + Duration = Duration (to make shorthands work, until const_generics_defaults is
 // stabilized)
+// UPDATE v0.4.0: With `typenum`, this should now be implementable
 impl<Numer: Unsigned, Denom: Unsigned + NonZero> ops::Add<Duration<u32, Numer, Denom>>
     for Duration<u64, Numer, Denom>
 {
@@ -699,6 +704,7 @@ impl<Numer: Unsigned, Denom: Unsigned + NonZero> ops::Add<Duration<u32, Numer, D
 }
 
 // Duration += Duration (to make shorthands work, until const_generics_defaults is stabilized)
+// UPDATE v0.4.0: With `typenum`, this should now be implementable
 impl<Numer: Unsigned, Denom: Unsigned + NonZero> ops::AddAssign<Duration<u32, Numer, Denom>>
     for Duration<u64, Numer, Denom>
 {
