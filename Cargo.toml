@@ -1,6 +1,6 @@
 [package]
 name = "typus_fugit"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["Ben Pieters-Hawke <benphawke@gmail.com>"]
 description = "`typenum` powered time library for the embedded ecosystem."
