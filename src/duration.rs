@@ -11,7 +11,7 @@ use typenum::{NonZero, Unsigned};
 /// The generic `T` can either be `u32` or `u64`, and the const generics represent the ratio of the
 /// ticks contained within the duration: `duration in seconds = Numer / Denom * ticks`
 #[derive(Clone, Copy, Debug)]
-pub struct Duration<T, Numer, Denom> {
+pub struct Duration<T, Numer, Denom: NonZero> {
     pub(crate) ticks: T,
     _numer: PhantomData<Numer>,
     _denom: PhantomData<Denom>,
@@ -55,7 +55,7 @@ macro_rules! impl_duration_for_integer {
             /// Create a `Duration` from a ticks value.
             ///
             /// ```
-            /// # use fugit::*;
+            /// # use typus_fugit::*;
             #[doc = concat!("let _d = Duration::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(1);")]
             /// ```
             #[inline]
@@ -66,7 +66,7 @@ macro_rules! impl_duration_for_integer {
             /// Extract the ticks from a `Duration`.
             ///
             /// ```
-            /// # use fugit::*;
+            /// # use typus_fugit::*;
             #[doc = concat!("let d = Duration::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(234);")]
             ///
             /// assert_eq!(d.ticks(), 234);
@@ -79,7 +79,7 @@ macro_rules! impl_duration_for_integer {
             /// Returns true if this `Duration` spans no time
             ///
             /// ```
-            /// # use fugit::*;
+            /// # use typus_fugit::*;
             #[doc = concat!("let zero = Duration::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(0);")]
             #[doc = concat!("let one = Duration::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(1);")]
             ///
@@ -94,7 +94,7 @@ macro_rules! impl_duration_for_integer {
             /// Add two durations while checking for overflow.
             ///
             /// ```
-            /// # use fugit::*;
+            /// # use typus_fugit::*;
             #[doc = concat!("let d1 = Duration::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(1);")]
             #[doc = concat!("let d2 = Duration::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(2);")]
             #[doc = concat!("let d3 = Duration::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(", stringify!($i), "::MAX);")]
@@ -133,7 +133,7 @@ macro_rules! impl_duration_for_integer {
             /// Subtract two durations while checking for overflow.
             ///
             /// ```
-            /// # use fugit::*;
+            /// # use typus_fugit::*;
             #[doc = concat!("let d1 = Duration::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(1);")]
             #[doc = concat!("let d2 = Duration::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(2);")]
             #[doc = concat!("let d3 = Duration::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(", stringify!($i), "::MAX);")]
@@ -184,7 +184,7 @@ macro_rules! impl_duration_for_integer {
             /// Const partial comparison.
             ///
             /// ```
-            /// # use fugit::*;
+            /// # use typus_fugit::*;
             #[doc = concat!("let d1 = Duration::<", stringify!($i), ", typenum::U1, typenum::U100>::from_ticks(1);")]
             #[doc = concat!("let d2 = Duration::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(1);")]
             ///
@@ -232,7 +232,7 @@ macro_rules! impl_duration_for_integer {
             /// Const equality check.
             ///
             /// ```
-            /// # use fugit::*;
+            /// # use typus_fugit::*;
             #[doc = concat!("let d1 = Duration::<", stringify!($i), ", typenum::U1, typenum::U100>::from_ticks(1);")]
             #[doc = concat!("let d2 = Duration::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(10);")]
             ///
@@ -265,7 +265,7 @@ macro_rules! impl_duration_for_integer {
             /// Const try from, checking for overflow.
             ///
             /// ```
-            /// # use fugit::*;
+            /// # use typus_fugit::*;
             #[doc = concat!("let d1 = Duration::<", stringify!($i), ", typenum::U1, typenum::U100>::from_ticks(1);")]
             #[doc = concat!("let d2 = Duration::<", stringify!($i), ", typenum::U1, typenum::U1000>::const_try_from(d1);")]
             ///
@@ -296,7 +296,7 @@ macro_rules! impl_duration_for_integer {
             /// Const try into, checking for overflow.
             ///
             /// ```
-            /// # use fugit::*;
+            /// # use typus_fugit::*;
             #[doc = concat!("let d1 = Duration::<", stringify!($i), ", typenum::U1, typenum::U100>::from_ticks(1);")]
             #[doc = concat!("let d2: Option<Duration::<", stringify!($i), ", typenum::U1, typenum::U1000>> = d1.const_try_into();")]
             ///
@@ -312,7 +312,7 @@ macro_rules! impl_duration_for_integer {
             /// Const try into rate, checking for divide-by-zero.
             ///
             /// ```
-            /// # use fugit::*;
+            /// # use typus_fugit::*;
             #[doc = concat!("let d1 = Duration::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(2);")]
             #[doc = concat!("let r1: Option<Rate::<", stringify!($i), ", typenum::U1, typenum::U1>> = d1.try_into_rate();")]
             ///
@@ -340,7 +340,7 @@ macro_rules! impl_duration_for_integer {
             /// Const try from rate, checking for divide-by-zero.
             ///
             /// ```
-            /// # use fugit::*;
+            /// # use typus_fugit::*;
             #[doc = concat!("let r1 = Rate::<", stringify!($i), ", typenum::U1, typenum::U1>::from_raw(1);")]
             #[doc = concat!("let d1 = Duration::<", stringify!($i), ", typenum::U1, typenum::U1000>::try_from_rate(r1);")]
             ///
@@ -378,7 +378,7 @@ macro_rules! impl_duration_for_integer {
             /// UPDATE v0.4.0: use of typenum instead of const generics may allow for this now.
             ///
             /// ```
-            /// # use fugit::*;
+            /// # use typus_fugit::*;
             #[doc = concat!("let d1 = Duration::<", stringify!($i), ", typenum::U1, typenum::U100>::from_ticks(1);")]
             #[doc = concat!("let d2: Duration::<", stringify!($i), ", typenum::U1, typenum::U1000> = d1.convert();")]
             ///
@@ -386,7 +386,7 @@ macro_rules! impl_duration_for_integer {
             /// ```
             /// Can be used in const contexts. Compilation will fail if the conversion causes overflow
             /// ```compile_fail
-            /// # use fugit::*;
+            /// # use typus_fugit::*;
             #[doc = concat!("const TICKS: ", stringify!($i), "= ", stringify!($i), "::MAX - 10;")]
             #[doc = concat!("const D1: Duration::<", stringify!($i), ", typenum::U1, typenum::U100> = Duration::<", stringify!($i), ", typenum::U1, typenum::U100>::from_ticks(TICKS);")]
             /// // Fails conversion due to tick overflow

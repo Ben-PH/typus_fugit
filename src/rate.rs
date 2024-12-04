@@ -24,7 +24,7 @@ macro_rules! impl_rate_for_integer {
             /// Create a `Rate` from a raw value.
             ///
             /// ```
-            /// # use fugit::*;
+            /// # use typus_fugit::*;
             #[doc = concat!("let _d = Rate::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_raw(1);")]
             /// ```
             #[inline]
@@ -35,7 +35,7 @@ macro_rules! impl_rate_for_integer {
             /// Extract the raw value from a `Rate`.
             ///
             /// ```
-            /// # use fugit::*;
+            /// # use typus_fugit::*;
             #[doc = concat!("let d = Rate::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_raw(234);")]
             ///
             /// assert_eq!(d.raw(), 234);
@@ -48,7 +48,7 @@ macro_rules! impl_rate_for_integer {
             /// Add two rates while checking for overflow.
             ///
             /// ```
-            /// # use fugit::*;
+            /// # use typus_fugit::*;
             #[doc = concat!("let r1 = Rate::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_raw(1);")]
             #[doc = concat!("let r2 = Rate::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_raw(2);")]
             #[doc = concat!("let r3 = Rate::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_raw(", stringify!($i), "::MAX);")]
@@ -87,7 +87,7 @@ macro_rules! impl_rate_for_integer {
             /// Subtract two rates while checking for overflow.
             ///
             /// ```
-            /// # use fugit::*;
+            /// # use typus_fugit::*;
             #[doc = concat!("let r1 = Rate::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_raw(1);")]
             #[doc = concat!("let r2 = Rate::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_raw(2);")]
             #[doc = concat!("let r3 = Rate::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_raw(", stringify!($i), "::MAX);")]
@@ -138,7 +138,7 @@ macro_rules! impl_rate_for_integer {
             /// Const partial comparison.
             ///
             /// ```
-            /// # use fugit::*;
+            /// # use typus_fugit::*;
             #[doc = concat!("let r1 = Rate::<", stringify!($i), ", typenum::U1, typenum::U100>::from_raw(1);")]
             #[doc = concat!("let r2 = Rate::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_raw(1);")]
             ///
@@ -171,7 +171,7 @@ macro_rules! impl_rate_for_integer {
             /// Const equality check.
             ///
             /// ```
-            /// # use fugit::*;
+            /// # use typus_fugit::*;
             #[doc = concat!("let r1 = Rate::<", stringify!($i), ", typenum::U1, typenum::U100>::from_raw(1);")]
             #[doc = concat!("let r2 = Rate::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_raw(10);")]
             ///
@@ -204,7 +204,7 @@ macro_rules! impl_rate_for_integer {
             /// Const try from, checking for overflow.
             ///
             /// ```
-            /// # use fugit::*;
+            /// # use typus_fugit::*;
             #[doc = concat!("let r1 = Rate::<", stringify!($i), ", typenum::U1, typenum::U100>::from_raw(1);")]
             #[doc = concat!("let r2 = Rate::<", stringify!($i), ", typenum::U1, typenum::U1000>::const_try_from(r1);")]
             ///
@@ -235,7 +235,7 @@ macro_rules! impl_rate_for_integer {
             /// Const try into, checking for overflow.
             ///
             /// ```
-            /// # use fugit::*;
+            /// # use typus_fugit::*;
             #[doc = concat!("let r1 = Rate::<", stringify!($i), ", typenum::U1, typenum::U100>::from_raw(1);")]
             #[doc = concat!("let r2: Option<Rate::<", stringify!($i), ", typenum::U1, typenum::U1000>> = r1.const_try_into();")]
             ///
@@ -251,7 +251,7 @@ macro_rules! impl_rate_for_integer {
             /// Const try into duration, checking for divide-by-zero.
             ///
             /// ```
-            /// # use fugit::*;
+            /// # use typus_fugit::*;
             #[doc = concat!("let r1 = Rate::<", stringify!($i), ", typenum::U1, typenum::U1>::from_raw(1);")]
             #[doc = concat!("let d1: Option<Duration::<", stringify!($i), ", typenum::U1, typenum::U1000>> = r1.try_into_duration();")]
             ///
@@ -277,7 +277,7 @@ macro_rules! impl_rate_for_integer {
             /// Const try from duration, checking for divide-by-zero.
             ///
             /// ```
-            /// # use fugit::*;
+            /// # use typus_fugit::*;
             #[doc = concat!("let d1 = Duration::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(2);")]
             #[doc = concat!("let r1 = Rate::<", stringify!($i), ", typenum::U1, typenum::U1>::try_from_duration(d1);")]
             ///
@@ -315,7 +315,7 @@ macro_rules! impl_rate_for_integer {
             /// UPDATE v0.4.0: use of typenum instead of const generics may allow for this now.
             ///
             /// ```
-            /// # use fugit::*;
+            /// # use typus_fugit::*;
             #[doc = concat!("let r1 = Rate::<", stringify!($i), ", typenum::U1, typenum::U100>::from_raw(1);")]
             #[doc = concat!("let r2: Rate::<", stringify!($i), ", typenum::U1, typenum::U1000> = r1.convert();")]
             ///
@@ -325,7 +325,7 @@ macro_rules! impl_rate_for_integer {
             /// Can be used in const contexts. Compilation will fail if the conversion causes overflow
             ///
             /// ```compile_fail
-            /// # use fugit::*;
+            /// # use typus_fugit::*;
             #[doc = concat!("const RAW: ", stringify!($i), "= ", stringify!($i), "::MAX - 10;")]
             #[doc = concat!("const R1: Rate::<", stringify!($i), ", typenum::U1, typenum::U100> = Rate::<", stringify!($i), ", 1, 100>::from_raw(RAW);")]
             /// // Fails conversion due to overflow

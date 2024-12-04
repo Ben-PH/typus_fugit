@@ -22,7 +22,7 @@ macro_rules! impl_instant_for_integer {
             /// Extract the ticks from an `Instant`.
             ///
             /// ```
-            /// # use fugit::*;
+            /// # use typus_fugit::*;
             #[doc = concat!("let i = Instant::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(234);")]
             ///
             /// assert_eq!(i.ticks(), 234);
@@ -37,7 +37,7 @@ macro_rules! impl_instant_for_integer {
             /// Create an `Instant` from a ticks value.
             ///
             /// ```
-            /// # use fugit::*;
+            /// # use typus_fugit::*;
             #[doc = concat!("let _i = Instant::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(1);")]
             /// ```
             #[inline]
@@ -48,7 +48,7 @@ macro_rules! impl_instant_for_integer {
             /// Const comparison of `Instant`s.
             ///
             /// ```
-            /// # use fugit::*;
+            /// # use typus_fugit::*;
             #[doc = concat!("let i1 = Instant::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(1);")]
             #[doc = concat!("let i2 = Instant::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(2);")]
             ///
@@ -60,7 +60,7 @@ macro_rules! impl_instant_for_integer {
             /// assumed that an overflow occured and the result is reversed:
             ///
             /// ```
-            /// # use fugit::*;
+            /// # use typus_fugit::*;
             #[doc = concat!("let i1 = Instant::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(", stringify!($i),"::MAX);")]
             #[doc = concat!("let i2 = Instant::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(1);")]
             ///
@@ -88,7 +88,7 @@ macro_rules! impl_instant_for_integer {
             /// won't wrap within the execution of the program.
             ///
             /// ```
-            /// # use fugit::*;
+            /// # use typus_fugit::*;
             #[doc = concat!("let i = Instant::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(11);")]
             ///
             /// assert_eq!(i.duration_since_epoch().ticks(), 11);
@@ -101,7 +101,7 @@ macro_rules! impl_instant_for_integer {
             /// Duration between `Instant`s.
             ///
             /// ```
-            /// # use fugit::*;
+            /// # use typus_fugit::*;
             #[doc = concat!("let i1 = Instant::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(1);")]
             #[doc = concat!("let i2 = Instant::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(2);")]
             ///
@@ -126,7 +126,7 @@ macro_rules! impl_instant_for_integer {
             /// Subtract a `Duration` from an `Instant` while checking for overflow.
             ///
             /// ```
-            /// # use fugit::*;
+            /// # use typus_fugit::*;
             #[doc = concat!("let i = Instant::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(1);")]
             #[doc = concat!("let d = Duration::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(1);")]
             ///
@@ -159,7 +159,7 @@ macro_rules! impl_instant_for_integer {
             /// Add a `Duration` to an `Instant` while checking for overflow.
             ///
             /// ```
-            /// # use fugit::*;
+            /// # use typus_fugit::*;
             #[doc = concat!("let i = Instant::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(1);")]
             #[doc = concat!("let d = Duration::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(1);")]
             ///
