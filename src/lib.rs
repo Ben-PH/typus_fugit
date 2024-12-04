@@ -1,16 +1,17 @@
-//! `fugit` provides a comprehensive library of [`Duration`] and [`Instant`] for the handling of
-//! time in embedded systems. The library is specifically designed to maximize const-ification
+//! `typus_fugit` provides a comprehensive library of [`Duration`] and [`Instant`] for the handling of
+//! time in embedded systems. The library is specifically designed to maximize type-system use
 //! which allows for most comparisons and changes of time-base to be made at compile time, rather
-//! than run time.
+//! than run time, as well as restricting use to legal values only.
 //!
-//! The library is aimed at ease-of-use and performance first.
+//! The library is aimed at performance and correctness first, with minimal friction to follow.
 //!
-//! We lift the concept of "values" into types using `typenum`. This allows for all
-//! limitations assosciated with const generics to not restrict possible use-cases, and scope
-//! of implementation.
+//! We lift the concept of "values" into types using `typenum`. This allows for:
+//!  - Specifying illigal values within the type-system, such as zero-val denominators
+//!  - not needing to specify machine-representation of values that are only used at compile-time
+//!  - compile-time arithmetic of values
 //!
 //! ```
-//! use fugit::{Duration, ExtU32};
+//! use typus_fugit::{Duration, ExtU32};
 //!
 //! // Efficient short-hands (`.millis()`, ...)
 //! let d = Duration::<u32, typenum::U1, typenum::U1000>::from_ticks(111);
