@@ -1,4 +1,7 @@
 # `typus_fugit`
+![Crates.io](https://img.shields.io/crates/v/typus_fugit.svg)
+[![Docs.rs](https://img.shields.io/docsrs/typus_fugit)](https://docs.rs/typus_fugit)
+
 
 > `typus_fugit` provides a comprehensive library of `Duration` and `Instant` for the handling of time in embedded systems, using compile-time types to represent values.
 
