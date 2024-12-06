@@ -4,15 +4,14 @@ use core::cmp::Ordering;
 use core::convert;
 use core::marker::PhantomData;
 use core::ops;
-use typenum::{NonZero, Unsigned, U36, U100};
+use typenum::{NonZero, Unsigned, U100, U36};
 mod period;
 pub use period::Period;
 
-
 /// Represents a duration of time.
 ///
-/// The generic `T` can either be `u32` or `u64`, typenums represent the ratio of the
-/// ticks contained within the duration: `duration in seconds = Numer / Denom * ticks`
+/// The generic `T` can either be `u32` or `u64`, typenums represent the Period in seconds
+/// Duration in seconds is calculated as `Numer / Denom * ticks`
 #[derive(Clone, Copy, Debug)]
 pub struct Duration<T, Numer, Denom: NonZero> {
     pub(crate) ticks: T,

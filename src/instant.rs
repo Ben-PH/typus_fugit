@@ -1,14 +1,11 @@
-use crate::duration::{ Duration, Period };
+use crate::duration::{Duration, Period};
 use crate::helpers::Helpers;
 use core::cmp::Ordering;
 use core::marker::PhantomData;
 use core::ops;
 use typenum::{NonZero, Unsigned};
 
-/// Represents an instant in time, measured as duration since a start-referenc.
-///
-/// The generic `T` can either be `u32` or `u64`, and the const generics represent the ratio of the
-/// ticks contained within the instant: `instant in seconds = Numer / Denom * ticks`
+/// Represents an instant in time, measured as [`Duration`] since a start-reference.
 #[derive(Clone, Copy, Debug)]
 pub struct Instant<T, Numer, Denom: NonZero> {
     /// Duration since start-reference
