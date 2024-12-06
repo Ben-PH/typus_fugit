@@ -14,6 +14,8 @@ jobs:
   changelog:
     name: Changelog
     runs-on: ubuntu-latest
+    # Only run for PRs targeting 'main'
+    if: github.event.pull_request.base.ref == 'main' 
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
