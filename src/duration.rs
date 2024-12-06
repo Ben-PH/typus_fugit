@@ -4,17 +4,19 @@ use core::cmp::Ordering;
 use core::convert;
 use core::marker::PhantomData;
 use core::ops;
-use typenum::{NonZero, Unsigned};
+use typenum::{NonZero, Unsigned, U36, U100};
+mod period;
+pub use period::Period;
+
 
 /// Represents a duration of time.
 ///
-/// The generic `T` can either be `u32` or `u64`, and the const generics represent the ratio of the
+/// The generic `T` can either be `u32` or `u64`, typenums represent the ratio of the
 /// ticks contained within the duration: `duration in seconds = Numer / Denom * ticks`
 #[derive(Clone, Copy, Debug)]
 pub struct Duration<T, Numer, Denom: NonZero> {
     pub(crate) ticks: T,
-    _numer: PhantomData<Numer>,
-    _denom: PhantomData<Denom>,
+    pub(crate) _period: Period<Numer, Denom>,
 }
 
 macro_rules! shorthand {
@@ -60,7 +62,7 @@ macro_rules! impl_duration_for_integer {
             /// ```
             #[inline]
             pub const fn from_ticks(ticks: $i) -> Self {
-                Duration { ticks, _numer: PhantomData, _denom: PhantomData }
+                Duration { ticks, _period: Period{_numer: PhantomData, _denom: PhantomData} }
             }
 
             /// Extract the ticks from a `Duration`.
@@ -407,7 +409,7 @@ macro_rules! impl_duration_for_integer {
             shorthand!($i, typenum::U1, typenum::U1000, millis, to_millis, millis_at_least, "milliseconds");
             shorthand!($i, typenum::U1, typenum::U1, secs, to_secs, secs_at_least, "seconds");
             shorthand!($i, typenum::U60, typenum::U1, minutes, to_minutes, minutes_at_least, "minutes");
-            shorthand!($i, crate::aliases::U3600, typenum::U1, hours, to_hours, hours_at_least, "hours");
+            shorthand!($i, typenum::op!(U36 * U100), typenum::U1, hours, to_hours, hours_at_least, "hours");
 
             /// Shorthand for creating a duration which represents hertz.
             #[inline]
