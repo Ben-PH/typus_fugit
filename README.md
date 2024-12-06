@@ -14,6 +14,10 @@ The decision to fork was due to the desire to replace const-generics values repr
 
 Initial implementation uses `typenum` for type-level values and evaluation. There is an intent to migrate to `type_eval` when it's ready.
 
+## Should I use `typus_fugit` over `fugit`?
+
+I cannot escape the fact that forking `fugit` fractures the ecosystem. Please do not use, or depend, on this crate, unless the topics of values at the type-level is of interest to you. This crate is, in significant part, motivated by assessing the reality of what a migration from const-generics to type-vals would look like.
+
 ## Aims
 
 * Try to stay in sync with `fugit`
@@ -29,3 +33,8 @@ Initial implementation uses `typenum` for type-level values and evaluation. Ther
 * Selection of base happens at compile time, within the type-system.
   * A common problem is that run time changing of base robs us of a lot of optimization opportunities, but since types are used here, bases are evaluated at compile time.
 
+#### Name
+
+The original `fugit` name, as I understand it, comes from the latin phrase "tempus fugit", i.e. "time flies".
+
+`typus_fugit` is a pun coming from said understanding.

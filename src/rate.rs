@@ -357,7 +357,7 @@ macro_rules! impl_rate_for_integer {
                         / Helpers::<U1000, U1, Numer, Denom>::RD_TIMES_LN as $i
             }
 
-            /// Convert the Rate to an interger number of MHz.
+            /// Convert the Rate to an interger number of `MHz`.
             #[inline]
             #[allow(non_snake_case)]
             pub const fn to_MHz(&self) -> $i {
