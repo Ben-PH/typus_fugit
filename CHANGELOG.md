@@ -12,6 +12,20 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Fixed
 
 ### Changed
+## [v0.1.2]
+
+### Added
+
+`Period` struct to encapsulate tick-period in seconds
+
+### Fixed
+
+Constrained `Instant` so that you cannot erroniously have a 0-divisor for eth period
+
+### Changed
+
+`Instant` is encapsulated as a `Duration` since a reference.
+`Duration` delegates tick-period length to the `Period` struct
 
 ## [v0.1.0]
 
