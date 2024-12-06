@@ -5,7 +5,6 @@ on:
     branches:
       - master
       - staging
-      - trying
 
 env:
   CARGO_TERM_COLOR: always
@@ -134,7 +133,7 @@ jobs:
   # ALL THE PREVIOUS JOBS NEEDS TO BE ADDED TO THE `needs` SECTION OF THIS JOB!
 
   ci-success:
-    name: ci
+    name: ci-success
     if: github.event_name == 'push' && success()
     needs:
       - style
