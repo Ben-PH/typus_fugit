@@ -1,24 +1,20 @@
-use crate::duration::Duration;
+use crate::duration::{Duration, Period};
 use crate::helpers::Helpers;
 use core::cmp::Ordering;
 use core::marker::PhantomData;
 use core::ops;
 use typenum::{NonZero, Unsigned};
 
-/// Represents an instant in time.
-///
-/// The generic `T` can either be `u32` or `u64`, and the const generics represent the ratio of the
-/// ticks contained within the instant: `instant in seconds = Numer / Denom * ticks`
+/// Represents an instant in time, measured as [`Duration`] since a start-reference.
 #[derive(Clone, Copy, Debug)]
-pub struct Instant<T, Numer, Denom> {
-    ticks: T,
-    _numer: PhantomData<Numer>,
-    _denom: PhantomData<Denom>,
+pub struct Instant<T, Numer, Denom: NonZero> {
+    /// Duration since start-reference
+    pub since_start: Duration<T, Numer, Denom>,
 }
 
 macro_rules! impl_instant_for_integer {
     ($i:ty) => {
-        impl<Numer, Denom> Instant<$i, Numer, Denom> {
+        impl<Numer, Denom: NonZero> Instant<$i, Numer, Denom> {
             /// Extract the ticks from an `Instant`.
             ///
             /// ```
@@ -29,7 +25,7 @@ macro_rules! impl_instant_for_integer {
             /// ```
             #[inline]
             pub const fn ticks(&self) -> $i {
-                self.ticks
+                self.since_start.ticks
             }
 
         }
@@ -42,7 +38,7 @@ macro_rules! impl_instant_for_integer {
             /// ```
             #[inline]
             pub const fn from_ticks(ticks: $i) -> Self {
-                Instant { ticks, _numer: PhantomData, _denom: PhantomData  }
+                Self { since_start: Duration { ticks, _period: Period{_numer: PhantomData, _denom: PhantomData} }}
             }
 
             /// Const comparison of `Instant`s.
@@ -68,10 +64,10 @@ macro_rules! impl_instant_for_integer {
             /// ```
             #[inline]
             pub const fn const_cmp(self, other: Self) -> Ordering {
-                if self.ticks == other.ticks {
+                if self.since_start.ticks == other.since_start.ticks {
                     Ordering::Equal
                 } else {
-                    let v = self.ticks.wrapping_sub(other.ticks);
+                    let v = self.since_start.ticks.wrapping_sub(other.since_start.ticks);
 
                     // not using `v.cmp(<$i>::MAX / 2).reverse()` due to `cmp` being non-const
                     if v > <$i>::MAX / 2 {
@@ -116,7 +112,7 @@ macro_rules! impl_instant_for_integer {
                 match self.const_cmp(other) {
                     Ordering::Greater | Ordering::Equal => {
                         Some(Duration::<$i, Numer, Denom>::from_ticks(
-                            self.ticks.wrapping_sub(other.ticks),
+                            self.since_start.ticks.wrapping_sub(other.since_start.ticks),
                         ))
                     }
                     Ordering::Less => None,
@@ -138,7 +134,7 @@ macro_rules! impl_instant_for_integer {
             ) -> Option<Self> {
                 if Helpers::<Numer, Denom, ONumer, ODenom>::SAME_BASE {
                     Some(Instant::<$i, Numer, Denom>::from_ticks(
-                        self.ticks.wrapping_sub(other.ticks()),
+                        self.since_start.ticks.wrapping_sub(other.ticks()),
                     ))
                 } else {
                     if let Some(lh) = other
@@ -148,7 +144,7 @@ macro_rules! impl_instant_for_integer {
                         let ticks = lh / Helpers::<Numer, Denom, ONumer, ODenom>::RD_TIMES_LN as $i;
 
                         Some(Instant::<$i, Numer, Denom>::from_ticks(
-                            self.ticks.wrapping_sub(ticks),
+                            self.since_start.ticks.wrapping_sub(ticks),
                         ))
                     } else {
                         None
@@ -171,7 +167,7 @@ macro_rules! impl_instant_for_integer {
             ) -> Option<Self> {
                 if Helpers::<Numer, Denom, ONumer, ODenom>::SAME_BASE {
                     Some(Instant::<$i, Numer, Denom>::from_ticks(
-                        self.ticks.wrapping_add(other.ticks()),
+                        self.since_start.ticks.wrapping_add(other.ticks()),
                     ))
                 } else {
                     if let Some(lh) = other
@@ -181,7 +177,7 @@ macro_rules! impl_instant_for_integer {
                         let ticks = lh / Helpers::<Numer, Denom, ONumer, ODenom>::RD_TIMES_LN as $i;
 
                         Some(Instant::<$i, Numer, Denom>::from_ticks(
-                            self.ticks.wrapping_add(ticks),
+                            self.since_start.ticks.wrapping_add(ticks),
                         ))
                     } else {
                         None
@@ -223,7 +219,7 @@ macro_rules! impl_instant_for_integer {
         impl<Numer:Unsigned, Denom: Unsigned + NonZero> PartialEq for Instant<$i, Numer, Denom> {
             #[inline]
             fn eq(&self, other: &Self) -> bool {
-                self.ticks.eq(&other.ticks)
+                self.since_start.ticks.eq(&other.since_start.ticks)
             }
         }
 
@@ -316,19 +312,19 @@ macro_rules! impl_instant_for_integer {
         impl<Numer:Unsigned, Denom: Unsigned + NonZero> defmt::Format for Instant<$i, Numer, Denom> {
             fn format(&self, f: defmt::Formatter) {
                 if Numer == 3_600 && Denom == 1 {
-                    defmt::write!(f, "{} h", self.ticks)
+                    defmt::write!(f, "{} h", self.since_start.ticks)
                 } else if Numer == 60 && Denom == 1 {
-                    defmt::write!(f, "{} min", self.ticks)
+                    defmt::write!(f, "{} min", self.since_start.ticks)
                 } else if Numer == 1 && Denom == 1 {
-                    defmt::write!(f, "{} s", self.ticks)
+                    defmt::write!(f, "{} s", self.since_start.ticks)
                 } else if Numer == 1 && Denom == 1_000 {
-                    defmt::write!(f, "{} ms", self.ticks)
+                    defmt::write!(f, "{} ms", self.since_start.ticks)
                 } else if Numer == 1 && Denom == 1_000_000 {
-                    defmt::write!(f, "{} us", self.ticks)
+                    defmt::write!(f, "{} us", self.since_start.ticks)
                 } else if Numer == 1 && Denom == 1_000_000_000 {
-                    defmt::write!(f, "{} ns", self.ticks)
+                    defmt::write!(f, "{} ns", self.since_start.ticks)
                 } else {
-                    defmt::write!(f, "{} ticks @ ({}/{})", self.ticks, Numer, Denom)
+                    defmt::write!(f, "{} ticks @ ({}/{})", self.since_start.ticks, Numer, Denom)
                 }
             }
         }
@@ -336,19 +332,19 @@ macro_rules! impl_instant_for_integer {
         impl<Numer:Unsigned, Denom: Unsigned + NonZero> core::fmt::Display for Instant<$i, Numer, Denom> {
             fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
                 if Numer::U64 == 3_600 && Denom::U64 == 1 {
-                    write!(f, "{} h", self.ticks)
+                    write!(f, "{} h", self.since_start.ticks)
                 } else if Numer::U64 == 60 && Denom::U64 == 1 {
-                    write!(f, "{} min", self.ticks)
+                    write!(f, "{} min", self.since_start.ticks)
                 } else if Numer::U64 == 1 && Denom::U64 == 1 {
-                    write!(f, "{} s", self.ticks)
+                    write!(f, "{} s", self.since_start.ticks)
                 } else if Numer::U64 == 1 && Denom::U64 == 1_000 {
-                    write!(f, "{} ms", self.ticks)
+                    write!(f, "{} ms", self.since_start.ticks)
                 } else if Numer::U64 == 1 && Denom::U64 == 1_000_000 {
-                    write!(f, "{} μs", self.ticks)
+                    write!(f, "{} μs", self.since_start.ticks)
                 } else if Numer::U64 == 1 && Denom::U64 == 1_000_000_000 {
-                    write!(f, "{} ns", self.ticks)
+                    write!(f, "{} ns", self.since_start.ticks)
                 } else {
-                    write!(f, "{} ticks @ ({}/{})", self.ticks, Numer::U64, Denom::U64)
+                    write!(f, "{} ticks @ ({}/{})", self.since_start.ticks, Numer::U64, Denom::U64)
                 }
             }
         }

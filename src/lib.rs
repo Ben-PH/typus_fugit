@@ -56,7 +56,7 @@ mod instant;
 mod rate;
 
 pub use aliases::*;
-pub use duration::{Duration, ExtU32, ExtU32Ceil, ExtU64, ExtU64Ceil};
+pub use duration::{Duration, ExtU32, ExtU32Ceil, ExtU64, ExtU64Ceil, Period};
 pub use instant::Instant;
 pub use rate::{ExtU32 as RateExtU32, ExtU64 as RateExtU64, Rate};
 pub use typenum;
