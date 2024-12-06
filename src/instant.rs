@@ -312,20 +312,20 @@ macro_rules! impl_instant_for_integer {
         #[cfg(feature = "defmt")]
         impl<Numer:Unsigned, Denom: Unsigned + NonZero> defmt::Format for Instant<$i, Numer, Denom> {
             fn format(&self, f: defmt::Formatter) {
-                if Numer == 3_600 && Denom == 1 {
+                if Numer::U64 == 3_600 && Denom::U64 == 1 {
                     defmt::write!(f, "{} h", self.since_start.ticks)
-                } else if Numer == 60 && Denom == 1 {
+                } else if Numer::U64 == 60 && Denom::U64 == 1 {
                     defmt::write!(f, "{} min", self.since_start.ticks)
-                } else if Numer == 1 && Denom == 1 {
+                } else if Numer::U64 == 1 && Denom::U64 == 1 {
                     defmt::write!(f, "{} s", self.since_start.ticks)
-                } else if Numer == 1 && Denom == 1_000 {
+                } else if Numer::U64 == 1 && Denom::U64 == 1_000 {
                     defmt::write!(f, "{} ms", self.since_start.ticks)
-                } else if Numer == 1 && Denom == 1_000_000 {
+                } else if Numer::U64 == 1 && Denom::U64 == 1_000_000 {
                     defmt::write!(f, "{} us", self.since_start.ticks)
-                } else if Numer == 1 && Denom == 1_000_000_000 {
+                } else if Numer::U64 == 1 && Denom::U64 == 1_000_000_000 {
                     defmt::write!(f, "{} ns", self.since_start.ticks)
                 } else {
-                    defmt::write!(f, "{} ticks @ ({}/{})", self.since_start.ticks, Numer, Denom)
+                    defmt::write!(f, "{} ticks @ ({}/{})", self.since_start.ticks, Numer::U64, Denom::U64)
                 }
             }
         }

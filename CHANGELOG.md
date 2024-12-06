@@ -11,7 +11,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
+`<Duration as defmt::Format>::format` is working again
+
 ### Changed
+
 ## [v0.1.2]
 
 ### Added
