@@ -48,6 +48,12 @@
 
 #![cfg_attr(not(test), no_std)]
 #![deny(missing_docs)]
+#![warn(clippy::all)]
+// Feel free to turn off for development, or add allows for noisy lints
+#![warn(clippy::pedantic)]
+#![allow(clippy::must_use_candidate)]
+#![allow(clippy::cast_possible_truncation)]
+#![allow(clippy::cast_lossless)]
 
 mod aliases;
 mod duration;
@@ -531,7 +537,7 @@ mod test {
 
         // Fixed in v0.3.2
         let d: Duration<u32, U1, U1000> =
-            Duration::<u32, U1, typenum::U32768>::from_ticks(42949672).convert();
+            Duration::<u32, U1, typenum::U32768>::from_ticks(42_949_672).convert();
         assert_eq!(d.ticks(), 1_310_719);
 
         // Division and multiplication by integers
@@ -725,7 +731,7 @@ mod test {
         assert_eq!(d.to_nanos(), 2_000_000_000);
 
         let d = Duration::<u32, U1, U10000>::from_ticks(100);
-        assert_eq!(d.to_nanos(), 1_0000_000);
+        assert_eq!(d.to_nanos(), 10_000_000);
 
         let d = Duration::<u32, U1, U10000>::from_ticks(100);
         assert_eq!(d.to_micros(), 1_0000);
@@ -810,13 +816,13 @@ mod test {
     #[test]
     fn duration_is_zero() {
         let d = Duration::<u64, U1, U1000>::from_ticks(0);
-        assert_eq!(d.is_zero(), true);
+        assert!(d.is_zero());
         let d = Duration::<u64, U1, U1000>::from_ticks(1);
-        assert_eq!(d.is_zero(), false);
+        assert!(!d.is_zero());
         let d = Duration::<u32, U1, U1000>::from_ticks(0);
-        assert_eq!(d.is_zero(), true);
+        assert!(d.is_zero());
         let d = Duration::<u32, U1, U1000>::from_ticks(1);
-        assert_eq!(d.is_zero(), false);
+        assert!(!d.is_zero());
     }
 
     ////////////////////////////////////////////////////////////////////////////////

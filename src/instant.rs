@@ -188,13 +188,14 @@ macro_rules! impl_instant_for_integer {
 
         impl<Numer:Unsigned, Denom: Unsigned + NonZero> PartialOrd for Instant<$i, Numer, Denom> {
             /// This implementation deviates from the definition of
-            /// [PartialOrd::partial_cmp](core::cmp::PartialOrd::partial_cmp):
+            /// [`PartialOrd::partial_cmp`](core::cmp::PartialOrd::partial_cmp):
             ///
             /// It takes into account that ticks might wrap around. If the absolute
             /// values of `self` and `other` differ by more than half the possible range, it is
             /// assumed that an overflow occured and the result is reversed.
             ///
             /// That breaks the transitivity invariant: a < b and b < c no longer implies a < c.
+            #[allow(clippy::non_canonical_partial_ord_impl)]
             #[inline]
             fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
                 Some(self.const_cmp(*other))
@@ -203,7 +204,7 @@ macro_rules! impl_instant_for_integer {
 
         impl<Numer:Unsigned, Denom: Unsigned + NonZero> Ord for Instant<$i, Numer, Denom> {
             /// This implementation deviates from the definition of
-            /// [Ord::cmp](core::cmp::Ord::cmp):
+            /// [`Ord::cmp`](core::cmp::Ord::cmp):
             ///
             /// It takes into account that ticks might wrap around. If the absolute
             /// values of `self` and `other` differ by more than half the possible range, it is
