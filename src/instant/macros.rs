@@ -1,32 +1,6 @@
 macro_rules! impl_instant_for_integer {
     ($i:ty) => {
-impl<Numer, Denom: NonZero> Instant<$i, Numer, Denom> {
-    /// Extract the ticks from an `Instant`.
-    ///
-    /// ```
-    /// # use typus_fugit::*;
-    #[doc = concat!("let i = Instant::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(234);")]
-    ///
-    /// assert_eq!(i.ticks(), 234);
-    /// ```
-    #[inline]
-    pub const fn ticks(&self) -> $i {
-        self.since_start.ticks
-    }
-
-}
 impl<Numer: Unsigned, Denom: Unsigned + NonZero> Instant<$i, Numer, Denom> {
-    /// Create an `Instant` from a ticks value.
-    ///
-    /// ```
-    /// # use typus_fugit::*;
-    #[doc = concat!("let _i = Instant::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(1);")]
-    /// ```
-    #[inline]
-    pub const fn from_ticks(ticks: $i) -> Self {
-        Self { since_start: Duration { ticks, _period: Period{_numer: PhantomData, _denom: PhantomData} }}
-    }
-
     /// Const comparison of `Instant`s.
     ///
     /// ```
@@ -64,20 +38,6 @@ impl<Numer: Unsigned, Denom: Unsigned + NonZero> Instant<$i, Numer, Denom> {
                 Ordering::Equal
             }
         }
-    }
-
-    /// Duration between since the start of the `Instant`. This assumes an instant which
-    /// won't wrap within the execution of the program.
-    ///
-    /// ```
-    /// # use typus_fugit::*;
-    #[doc = concat!("let i = Instant::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(11);")]
-    ///
-    /// assert_eq!(i.duration_since_epoch().ticks(), 11);
-    /// ```
-    #[inline]
-    pub const fn duration_since_epoch(self) -> Duration<$i, Numer, Denom> {
-        Duration::<$i, Numer, Denom>::from_ticks(self.ticks())
     }
 
     /// Duration between `Instant`s.
@@ -250,19 +210,6 @@ impl<Numer:Unsigned, Denom: Unsigned + NonZero> ops::Sub<Duration<$i, Numer, Den
     }
 }
 
-// Instant -= Duration
-// We have limited this to use same numerator and denominator in both left and right hand sides,
-// this allows for the extension traits to work. For usage with different fraction, use
-// `checked_sub_duration`.
-impl<Numer:Unsigned, Denom: Unsigned + NonZero> ops::SubAssign<Duration<$i, Numer, Denom>>
-    for Instant<$i, Numer, Denom>
-{
-    #[inline]
-    fn sub_assign(&mut self, other: Duration<$i, Numer, Denom>) {
-        *self = *self - other;
-    }
-}
-
 // Instant + Duration = Instant
 // We have limited this to use same numerator and denominator in both left and right hand sides,
 // this allows for the extension traits to work. For usage with different fraction, use
@@ -279,19 +226,6 @@ impl<Numer:Unsigned, Denom: Unsigned + NonZero> ops::Add<Duration<$i, Numer, Den
         } else {
             panic!("Add failed! Overflow");
         }
-    }
-}
-
-// Instant += Duration
-// We have limited this to use same numerator and denominator in both left and right hand sides,
-// this allows for the extension traits to work. For usage with different fraction, use
-// `checked_add_duration`.
-impl<Numer:Unsigned, Denom: Unsigned + NonZero> ops::AddAssign<Duration<$i, Numer, Denom>>
-    for Instant<$i, Numer, Denom>
-{
-    #[inline]
-    fn add_assign(&mut self, other: Duration<$i, Numer, Denom>) {
-        *self = *self + other;
     }
 }
 

@@ -1,30 +1,6 @@
 macro_rules! impl_rate_for_integer {
     ($i:ty) => {
 impl<Numer: Unsigned, Denom:Unsigned + NonZero> Rate<$i, Numer, Denom> {
-    /// Create a `Rate` from a raw value.
-    ///
-    /// ```
-    /// # use typus_fugit::*;
-    #[doc = concat!("let _d = Rate::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_raw(1);")]
-    /// ```
-    #[inline]
-    pub const fn from_raw(raw: $i) -> Self {
-        Rate { raw, _numer: PhantomData, _denom: PhantomData }
-    }
-
-    /// Extract the raw value from a `Rate`.
-    ///
-    /// ```
-    /// # use typus_fugit::*;
-    #[doc = concat!("let d = Rate::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_raw(234);")]
-    ///
-    /// assert_eq!(d.raw(), 234);
-    /// ```
-    #[inline]
-    pub const fn raw(&self) -> $i {
-        self.raw
-    }
-
     /// Add two rates while checking for overflow.
     ///
     /// ```
@@ -421,51 +397,6 @@ impl<LNumer: Unsigned, LDenom:Unsigned + NonZero, RNumer: Unsigned, RDenom:Unsig
 
 impl<Numer: Unsigned, Denom:Unsigned + NonZero> Eq for Rate<$i, Numer, Denom> {}
 
-// Rate - Rate = Rate (only same base until const_generics_defaults is
-// stabilized)
-// UPDATE v0.4.0: With `typenum`, this should now be implementable
-impl<Numer: Unsigned, Denom:Unsigned + NonZero> ops::Sub<Rate<$i, Numer, Denom>>
-    for Rate<$i, Numer, Denom>
-{
-    type Output = Rate<$i, Numer, Denom>;
-
-    #[inline]
-    fn sub(self, other: Rate<$i, Numer, Denom>) -> Self::Output {
-        if let Some(v) = self.checked_sub(other) {
-            v
-        } else {
-            panic!("Sub failed!");
-        }
-    }
-}
-
-// Rate + Rate = Rate (only same base until const_generics_defaults is
-// stabilized)
-// UPDATE v0.4.0: With `typenum`, this should now be implementable
-impl<Numer: Unsigned, Denom:Unsigned + NonZero> ops::Add<Rate<$i, Numer, Denom>>
-    for Rate<$i, Numer, Denom>
-{
-    type Output = Rate<$i, Numer, Denom>;
-
-    #[inline]
-    fn add(self, other: Rate<$i, Numer, Denom>) -> Self::Output {
-        if let Some(v) = self.checked_add(other) {
-            v
-        } else {
-            panic!("Add failed!");
-        }
-    }
-}
-
-// Rate += Rate
-impl<Numer: Unsigned, Denom:Unsigned + NonZero> ops::AddAssign<Rate<$i, Numer, Denom>>
-    for Rate<$i, Numer, Denom>
-{
-    #[inline]
-    fn add_assign(&mut self, other: Self) {
-        *self = *self + other;
-    }
-}
 
 // integer * Rate = Rate
 impl<Numer: Unsigned, Denom:Unsigned + NonZero> ops::Mul<Rate<$i, Numer, Denom>> for u32 {

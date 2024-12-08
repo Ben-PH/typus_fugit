@@ -33,30 +33,6 @@ macro_rules! shorthand {
 macro_rules! impl_duration_for_integer {
     ($i:ty) => {
 impl<Numer: Unsigned, Denom: Unsigned + NonZero> Duration<$i, Numer, Denom> {
-    /// Create a `Duration` from a ticks value.
-    ///
-    /// ```
-    /// # use typus_fugit::*;
-    #[doc = concat!("let _d = Duration::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(1);")]
-    /// ```
-    #[inline]
-    pub const fn from_ticks(ticks: $i) -> Self {
-        Duration { ticks, _period: Period{_numer: PhantomData, _denom: PhantomData} }
-    }
-
-    /// Extract the ticks from a `Duration`.
-    ///
-    /// ```
-    /// # use typus_fugit::*;
-    #[doc = concat!("let d = Duration::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(234);")]
-    ///
-    /// assert_eq!(d.ticks(), 234);
-    /// ```
-    #[inline]
-    pub const fn ticks(&self) -> $i {
-        self.ticks
-    }
-
     /// Returns true if this `Duration` spans no time
     ///
     /// ```
@@ -439,61 +415,6 @@ impl<LNumer: Unsigned, LDenom: Unsigned + NonZero, RNumer: Unsigned, RDenom: Uns
 
 impl<Numer: Unsigned, Denom: Unsigned + NonZero> Eq for Duration<$i, Numer, Denom> {}
 
-// Duration - Duration = Duration (only same base until const_generics_defaults is
-// stabilized)
-// UPDATE v0.4.0: With `typenum`, this should now be implementable
-impl<Numer: Unsigned, Denom: Unsigned + NonZero> ops::Sub<Duration<$i, Numer, Denom>>
-    for Duration<$i, Numer, Denom>
-{
-    type Output = Duration<$i, Numer, Denom>;
-
-    #[inline]
-    fn sub(self, other: Duration<$i, Numer, Denom>) -> Self::Output {
-        if let Some(v) = self.checked_sub(other) {
-            v
-        } else {
-            panic!("Sub failed!");
-        }
-    }
-}
-
-// Duration -= Duration
-impl<Numer: Unsigned, Denom: Unsigned + NonZero> ops::SubAssign<Duration<$i, Numer, Denom>>
-    for Duration<$i, Numer, Denom>
-{
-    #[inline]
-    fn sub_assign(&mut self, other: Self) {
-        *self = *self - other;
-    }
-}
-
-// Duration + Duration = Duration (only same base until const_generics_defaults is
-// stabilized)
-// UPDATE v0.4.0: With `typenum`, this should now be implementable
-impl<Numer: Unsigned, Denom: Unsigned + NonZero> ops::Add<Duration<$i, Numer, Denom>>
-    for Duration<$i, Numer, Denom>
-{
-    type Output = Duration<$i, Numer, Denom>;
-
-    #[inline]
-    fn add(self, other: Duration<$i, Numer, Denom>) -> Self::Output {
-        if let Some(v) = self.checked_add(other) {
-            v
-        } else {
-            panic!("Add failed!");
-        }
-    }
-}
-
-// Duration += Duration
-impl<Numer: Unsigned, Denom: Unsigned + NonZero> ops::AddAssign<Duration<$i, Numer, Denom>>
-    for Duration<$i, Numer, Denom>
-{
-    #[inline]
-    fn add_assign(&mut self, other: Self) {
-        *self = *self + other;
-    }
-}
 
 // integer * Duration = Duration
 impl<Numer: Unsigned, Denom: Unsigned + NonZero> ops::Mul<Duration<$i, Numer, Denom>> for u32 {

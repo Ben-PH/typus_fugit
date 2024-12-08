@@ -7,13 +7,42 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-### Added
+### Removed
+
+### Changed
+
+The following `Duration` implementations are constrained to `PrimInt` instead of just u32/64,
+when the bases are the same.
+
+- `from_ticks`
+- `ticks`
+- `+`
+- `+=`
+- `-`
+- `-=`
+
+The following `Instant` implementations are constrained to `PrimInt` instead of just u32/64,
+when the bases are the same.
+
+- `from_ticks`
+- `ticks`
+- `Instant -= Duration`
+- `Instant += Duration`
+
+The following `Instant` implementations are constrained to `PrimInt` instead of just u32/64,
+when the bases are the same.
+
+- `raw`
+- `from_raw`
+- `-`
+- `+`
+- `+=`
 
 ### Fixed
 
 `<Duration as defmt::Format>::format` is working again
 
-### Changed
+### Added
 
 ## [v0.1.2]
 
