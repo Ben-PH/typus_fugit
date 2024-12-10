@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 
+### Fixed
+
+### Added
+
+## [v0.1.3]
+
+### Removed
+
+### Changed
+
 The following `Duration` implementations are constrained to `PrimInt` instead of just u32/64,
 when the bases are the same.
 
