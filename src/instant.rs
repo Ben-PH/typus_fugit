@@ -1,359 +1,116 @@
-use crate::duration::{Duration, Period};
-use crate::helpers::Helpers;
-use core::cmp::Ordering;
-use core::marker::PhantomData;
-use core::ops;
+use core::{cmp::Ordering, marker::PhantomData, ops};
+
+use num_traits::PrimInt;
 use typenum::{NonZero, Unsigned};
+
+use crate::{
+    duration::{Duration, Period},
+    helpers::Helpers,
+};
+
+#[macro_use]
+mod macros;
 
 /// Represents an instant in time, measured as [`Duration`] since a start-reference.
 #[derive(Clone, Copy, Debug)]
-pub struct Instant<T, Numer, Denom: NonZero> {
+pub struct Instant<T, Numer, Denom>
+where
+    T: PrimInt,
+    Denom: NonZero,
+{
     /// Duration since start-reference
     pub since_start: Duration<T, Numer, Denom>,
 }
 
-macro_rules! impl_instant_for_integer {
-    ($i:ty) => {
-        impl<Numer, Denom: NonZero> Instant<$i, Numer, Denom> {
-            /// Extract the ticks from an `Instant`.
-            ///
-            /// ```
-            /// # use typus_fugit::*;
-            #[doc = concat!("let i = Instant::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(234);")]
-            ///
-            /// assert_eq!(i.ticks(), 234);
-            /// ```
-            #[inline]
-            pub const fn ticks(&self) -> $i {
-                self.since_start.ticks
-            }
-
-        }
-        impl<Numer: Unsigned, Denom: Unsigned + NonZero> Instant<$i, Numer, Denom> {
-            /// Create an `Instant` from a ticks value.
-            ///
-            /// ```
-            /// # use typus_fugit::*;
-            #[doc = concat!("let _i = Instant::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(1);")]
-            /// ```
-            #[inline]
-            pub const fn from_ticks(ticks: $i) -> Self {
-                Self { since_start: Duration { ticks, _period: Period{_numer: PhantomData, _denom: PhantomData} }}
-            }
-
-            /// Const comparison of `Instant`s.
-            ///
-            /// ```
-            /// # use typus_fugit::*;
-            #[doc = concat!("let i1 = Instant::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(1);")]
-            #[doc = concat!("let i2 = Instant::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(2);")]
-            ///
-            /// assert_eq!(i1.const_cmp(i2), core::cmp::Ordering::Less);
-            /// ```
-            ///
-            /// This function takes into account that ticks might wrap around. If the absolute
-            /// values of `self` and `other` differ by more than half the possible range, it is
-            /// assumed that an overflow occured and the result is reversed:
-            ///
-            /// ```
-            /// # use typus_fugit::*;
-            #[doc = concat!("let i1 = Instant::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(", stringify!($i),"::MAX);")]
-            #[doc = concat!("let i2 = Instant::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(1);")]
-            ///
-            /// assert_eq!(i1.const_cmp(i2), core::cmp::Ordering::Less);
-            /// ```
-            #[inline]
-            pub const fn const_cmp(self, other: Self) -> Ordering {
-                if self.since_start.ticks == other.since_start.ticks {
-                    Ordering::Equal
-                } else {
-                    let v = self.since_start.ticks.wrapping_sub(other.since_start.ticks);
-
-                    // not using `v.cmp(<$i>::MAX / 2).reverse()` due to `cmp` being non-const
-                    if v > <$i>::MAX / 2 {
-                        Ordering::Less
-                    } else if v < <$i>::MAX / 2 {
-                        Ordering::Greater
-                    } else {
-                        Ordering::Equal
-                    }
-                }
-            }
-
-            /// Duration between since the start of the `Instant`. This assumes an instant which
-            /// won't wrap within the execution of the program.
-            ///
-            /// ```
-            /// # use typus_fugit::*;
-            #[doc = concat!("let i = Instant::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(11);")]
-            ///
-            /// assert_eq!(i.duration_since_epoch().ticks(), 11);
-            /// ```
-            #[inline]
-            pub const fn duration_since_epoch(self) -> Duration<$i, Numer, Denom> {
-                Duration::<$i, Numer, Denom>::from_ticks(self.ticks())
-            }
-
-            /// Duration between `Instant`s.
-            ///
-            /// ```
-            /// # use typus_fugit::*;
-            #[doc = concat!("let i1 = Instant::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(1);")]
-            #[doc = concat!("let i2 = Instant::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(2);")]
-            ///
-            /// assert_eq!(i1.checked_duration_since(i2), None);
-            /// assert_eq!(i2.checked_duration_since(i1).unwrap().ticks(), 1);
-            /// ```
-            #[inline]
-            pub const fn checked_duration_since(
-                self,
-                other: Self,
-            ) -> Option<Duration<$i, Numer, Denom>> {
-                match self.const_cmp(other) {
-                    Ordering::Greater | Ordering::Equal => {
-                        Some(Duration::<$i, Numer, Denom>::from_ticks(
-                            self.since_start.ticks.wrapping_sub(other.since_start.ticks),
-                        ))
-                    }
-                    Ordering::Less => None,
-                }
-            }
-
-            /// Subtract a `Duration` from an `Instant` while checking for overflow.
-            ///
-            /// ```
-            /// # use typus_fugit::*;
-            #[doc = concat!("let i = Instant::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(1);")]
-            #[doc = concat!("let d = Duration::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(1);")]
-            ///
-            /// assert_eq!(i.checked_sub_duration(d).unwrap().ticks(), 0);
-            /// ```
-            pub const fn checked_sub_duration<ONumer: Unsigned, ODenom: Unsigned + NonZero>(
-                self,
-                other: Duration<$i, ONumer, ODenom>,
-            ) -> Option<Self> {
-                if Helpers::<Numer, Denom, ONumer, ODenom>::SAME_BASE {
-                    Some(Instant::<$i, Numer, Denom>::from_ticks(
-                        self.since_start.ticks.wrapping_sub(other.ticks()),
-                    ))
-                } else {
-                    if let Some(lh) = other
-                        .ticks()
-                        .checked_mul(Helpers::<Numer, Denom, ONumer, ODenom>::LD_TIMES_RN as $i)
-                    {
-                        let ticks = lh / Helpers::<Numer, Denom, ONumer, ODenom>::RD_TIMES_LN as $i;
-
-                        Some(Instant::<$i, Numer, Denom>::from_ticks(
-                            self.since_start.ticks.wrapping_sub(ticks),
-                        ))
-                    } else {
-                        None
-                    }
-                }
-            }
-
-            /// Add a `Duration` to an `Instant` while checking for overflow.
-            ///
-            /// ```
-            /// # use typus_fugit::*;
-            #[doc = concat!("let i = Instant::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(1);")]
-            #[doc = concat!("let d = Duration::<", stringify!($i), ", typenum::U1, typenum::U1000>::from_ticks(1);")]
-            ///
-            /// assert_eq!(i.checked_add_duration(d).unwrap().ticks(), 2);
-            /// ```
-            pub const fn checked_add_duration<ONumer: Unsigned, ODenom: Unsigned + NonZero>(
-                self,
-                other: Duration<$i, ONumer, ODenom>,
-            ) -> Option<Self> {
-                if Helpers::<Numer, Denom, ONumer, ODenom>::SAME_BASE {
-                    Some(Instant::<$i, Numer, Denom>::from_ticks(
-                        self.since_start.ticks.wrapping_add(other.ticks()),
-                    ))
-                } else {
-                    if let Some(lh) = other
-                        .ticks()
-                        .checked_mul(Helpers::<Numer, Denom, ONumer, ODenom>::LD_TIMES_RN as $i)
-                    {
-                        let ticks = lh / Helpers::<Numer, Denom, ONumer, ODenom>::RD_TIMES_LN as $i;
-
-                        Some(Instant::<$i, Numer, Denom>::from_ticks(
-                            self.since_start.ticks.wrapping_add(ticks),
-                        ))
-                    } else {
-                        None
-                    }
-                }
-            }
-        }
-
-        impl<Numer:Unsigned, Denom: Unsigned + NonZero> PartialOrd for Instant<$i, Numer, Denom> {
-            /// This implementation deviates from the definition of
-            /// [`PartialOrd::partial_cmp`](core::cmp::PartialOrd::partial_cmp):
-            ///
-            /// It takes into account that ticks might wrap around. If the absolute
-            /// values of `self` and `other` differ by more than half the possible range, it is
-            /// assumed that an overflow occured and the result is reversed.
-            ///
-            /// That breaks the transitivity invariant: a < b and b < c no longer implies a < c.
-            #[allow(clippy::non_canonical_partial_ord_impl)]
-            #[inline]
-            fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-                Some(self.const_cmp(*other))
-            }
-        }
-
-        impl<Numer:Unsigned, Denom: Unsigned + NonZero> Ord for Instant<$i, Numer, Denom> {
-            /// This implementation deviates from the definition of
-            /// [`Ord::cmp`](core::cmp::Ord::cmp):
-            ///
-            /// It takes into account that ticks might wrap around. If the absolute
-            /// values of `self` and `other` differ by more than half the possible range, it is
-            /// assumed that an overflow occured and the result is reversed.
-            ///
-            /// That breaks the transitivity invariant: a < b and b < c no longer implies a < c.
-            #[inline]
-            fn cmp(&self, other: &Self) -> Ordering {
-                self.const_cmp(*other)
-            }
-        }
-
-        impl<Numer:Unsigned, Denom: Unsigned + NonZero> PartialEq for Instant<$i, Numer, Denom> {
-            #[inline]
-            fn eq(&self, other: &Self) -> bool {
-                self.since_start.ticks.eq(&other.since_start.ticks)
-            }
-        }
-
-        impl<Numer:Unsigned, Denom: Unsigned + NonZero> Eq for Instant<$i, Numer, Denom> {}
-
-        // Instant - Instant = Duration
-        // We have limited this to use same numerator and denominator in both left and right hand sides,
-        // this allows for the extension traits to work. For usage with different fraction, use
-        // `checked_duration_since`.
-        impl<Numer:Unsigned, Denom: Unsigned + NonZero> ops::Sub<Instant<$i, Numer, Denom>>
-            for Instant<$i, Numer, Denom>
-        {
-            type Output = Duration<$i, Numer, Denom>;
-
-            #[inline]
-            fn sub(self, other: Self) -> Self::Output {
-                if let Some(v) = self.checked_duration_since(other) {
-                    v
-                } else {
-                    panic!("Sub failed! Other > self");
-                }
-            }
-        }
-
-        // Instant - Duration = Instant
-        // We have limited this to use same numerator and denominator in both left and right hand sides,
-        // this allows for the extension traits to work. For usage with different fraction, use
-        // `checked_sub_duration`.
-        impl<Numer:Unsigned, Denom: Unsigned + NonZero> ops::Sub<Duration<$i, Numer, Denom>>
-            for Instant<$i, Numer, Denom>
-        {
-            type Output = Instant<$i, Numer, Denom>;
-
-            #[inline]
-            fn sub(self, other: Duration<$i, Numer, Denom>) -> Self::Output {
-                if let Some(v) = self.checked_sub_duration(other) {
-                    v
-                } else {
-                    panic!("Sub failed! Overflow");
-                }
-            }
-        }
-
-        // Instant -= Duration
-        // We have limited this to use same numerator and denominator in both left and right hand sides,
-        // this allows for the extension traits to work. For usage with different fraction, use
-        // `checked_sub_duration`.
-        impl<Numer:Unsigned, Denom: Unsigned + NonZero> ops::SubAssign<Duration<$i, Numer, Denom>>
-            for Instant<$i, Numer, Denom>
-        {
-            #[inline]
-            fn sub_assign(&mut self, other: Duration<$i, Numer, Denom>) {
-                *self = *self - other;
-            }
-        }
-
-        // Instant + Duration = Instant
-        // We have limited this to use same numerator and denominator in both left and right hand sides,
-        // this allows for the extension traits to work. For usage with different fraction, use
-        // `checked_add_duration`.
-        impl<Numer:Unsigned, Denom: Unsigned + NonZero> ops::Add<Duration<$i, Numer, Denom>>
-            for Instant<$i, Numer, Denom>
-        {
-            type Output = Instant<$i, Numer, Denom>;
-
-            #[inline]
-            fn add(self, other: Duration<$i, Numer, Denom>) -> Self::Output {
-                if let Some(v) = self.checked_add_duration(other) {
-                    v
-                } else {
-                    panic!("Add failed! Overflow");
-                }
-            }
-        }
-
-        // Instant += Duration
-        // We have limited this to use same numerator and denominator in both left and right hand sides,
-        // this allows for the extension traits to work. For usage with different fraction, use
-        // `checked_add_duration`.
-        impl<Numer:Unsigned, Denom: Unsigned + NonZero> ops::AddAssign<Duration<$i, Numer, Denom>>
-            for Instant<$i, Numer, Denom>
-        {
-            #[inline]
-            fn add_assign(&mut self, other: Duration<$i, Numer, Denom>) {
-                *self = *self + other;
-            }
-        }
-
-        #[cfg(feature = "defmt")]
-        impl<Numer:Unsigned, Denom: Unsigned + NonZero> defmt::Format for Instant<$i, Numer, Denom> {
-            fn format(&self, f: defmt::Formatter) {
-                if Numer == 3_600 && Denom == 1 {
-                    defmt::write!(f, "{} h", self.since_start.ticks)
-                } else if Numer == 60 && Denom == 1 {
-                    defmt::write!(f, "{} min", self.since_start.ticks)
-                } else if Numer == 1 && Denom == 1 {
-                    defmt::write!(f, "{} s", self.since_start.ticks)
-                } else if Numer == 1 && Denom == 1_000 {
-                    defmt::write!(f, "{} ms", self.since_start.ticks)
-                } else if Numer == 1 && Denom == 1_000_000 {
-                    defmt::write!(f, "{} us", self.since_start.ticks)
-                } else if Numer == 1 && Denom == 1_000_000_000 {
-                    defmt::write!(f, "{} ns", self.since_start.ticks)
-                } else {
-                    defmt::write!(f, "{} ticks @ ({}/{})", self.since_start.ticks, Numer, Denom)
-                }
-            }
-        }
-
-        impl<Numer:Unsigned, Denom: Unsigned + NonZero> core::fmt::Display for Instant<$i, Numer, Denom> {
-            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                if Numer::U64 == 3_600 && Denom::U64 == 1 {
-                    write!(f, "{} h", self.since_start.ticks)
-                } else if Numer::U64 == 60 && Denom::U64 == 1 {
-                    write!(f, "{} min", self.since_start.ticks)
-                } else if Numer::U64 == 1 && Denom::U64 == 1 {
-                    write!(f, "{} s", self.since_start.ticks)
-                } else if Numer::U64 == 1 && Denom::U64 == 1_000 {
-                    write!(f, "{} ms", self.since_start.ticks)
-                } else if Numer::U64 == 1 && Denom::U64 == 1_000_000 {
-                    write!(f, "{} μs", self.since_start.ticks)
-                } else if Numer::U64 == 1 && Denom::U64 == 1_000_000_000 {
-                    write!(f, "{} ns", self.since_start.ticks)
-                } else {
-                    write!(f, "{} ticks @ ({}/{})", self.since_start.ticks, Numer::U64, Denom::U64)
-                }
-            }
-        }
-    };
-}
-
 impl_instant_for_integer!(u32);
 impl_instant_for_integer!(u64);
+impl<T, Numer, Denom> Instant<T, Numer, Denom>
+where
+    T: PrimInt,
+    Denom: NonZero,
+{
+    /// Extract the ticks from an `Instant`.
+    ///
+    /// ```
+    /// # use typus_fugit::*;
+    /// let i = Instant::<_, typenum::U1, typenum::U1000>::from_ticks(234);
+    ///
+    /// assert_eq!(i.ticks(), 234);
+    /// ```
+    #[inline]
+    pub const fn ticks(&self) -> T {
+        self.since_start.ticks
+    }
+
+    /// Create an `Instant` from a ticks value.
+    ///
+    /// ```
+    /// # use typus_fugit::*;
+    /// let _i = Instant::<_, typenum::U1, typenum::U1000>::from_ticks(1);
+    /// ```
+    #[inline]
+    pub const fn from_ticks(ticks: T) -> Self {
+        Self {
+            since_start: Duration {
+                ticks,
+                _period: Period {
+                    _numer: PhantomData,
+                    _denom: PhantomData,
+                },
+            },
+        }
+    }
+
+    /// Duration between since the start of the `Instant`. This assumes an instant which
+    /// won't wrap within the execution of the program.
+    ///
+    /// ```
+    /// # use typus_fugit::*;
+    /// let i = Instant::<_, typenum::U1, typenum::U1000>::from_ticks(11);
+    ///
+    /// assert_eq!(i.duration_since_epoch().ticks(), 11);
+    /// ```
+    #[inline]
+    pub const fn duration_since_epoch(self) -> Duration<T, Numer, Denom> {
+        self.since_start
+    }
+}
+
+// Instant -= Duration
+// We have limited this to use same numerator and denominator in both left and right hand sides,
+// this allows for the extension traits to work. For usage with different fraction, use
+// `checked_sub_duration`.
+impl<ST, OT, Numer, Denom> ops::SubAssign<Duration<OT, Numer, Denom>> for Instant<ST, Numer, Denom>
+where
+    ST: PrimInt,
+    OT: PrimInt,
+    Self: ops::Sub<Duration<OT, Numer, Denom>, Output = Self>,
+    Numer: Unsigned,
+    Denom: Unsigned + NonZero,
+{
+    #[inline]
+    fn sub_assign(&mut self, other: Duration<OT, Numer, Denom>) {
+        *self = *self - other;
+    }
+}
+
+// Instant += Duration
+// We have limited this to use same numerator and denominator in both left and right hand sides,
+// this allows for the extension traits to work. For usage with different fraction, use
+// `checked_add_duration`.
+impl<ST, OT, Numer, Denom> ops::AddAssign<Duration<OT, Numer, Denom>> for Instant<ST, Numer, Denom>
+where
+    ST: PrimInt,
+    OT: PrimInt,
+    Self: ops::Add<Duration<OT, Numer, Denom>, Output = Self>,
+    Numer: Unsigned,
+    Denom: Unsigned + NonZero,
+{
+    #[inline]
+    fn add_assign(&mut self, other: Duration<OT, Numer, Denom>) {
+        *self = *self + other;
+    }
+}
 
 //
 // Operations between u32 Duration and u64 Instant
@@ -363,8 +120,10 @@ impl_instant_for_integer!(u64);
 // We have limited this to use same numerator and denominator in both left and right hand sides,
 // this allows for the extension traits to work. For usage with different fraction, use
 // `checked_sub_duration`.
-impl<Numer: Unsigned, Denom: Unsigned + NonZero> ops::Sub<Duration<u32, Numer, Denom>>
-    for Instant<u64, Numer, Denom>
+impl<Numer, Denom> ops::Sub<Duration<u32, Numer, Denom>> for Instant<u64, Numer, Denom>
+where
+    Numer: Unsigned,
+    Denom: Unsigned + NonZero,
 {
     type Output = Instant<u64, Numer, Denom>;
 
@@ -378,25 +137,14 @@ impl<Numer: Unsigned, Denom: Unsigned + NonZero> ops::Sub<Duration<u32, Numer, D
     }
 }
 
-// Instant -= Duration
-// We have limited this to use same numerator and denominator in both left and right hand sides,
-// this allows for the extension traits to work. For usage with different fraction, use
-// `checked_sub_duration`.
-impl<Numer: Unsigned, Denom: Unsigned + NonZero> ops::SubAssign<Duration<u32, Numer, Denom>>
-    for Instant<u64, Numer, Denom>
-{
-    #[inline]
-    fn sub_assign(&mut self, other: Duration<u32, Numer, Denom>) {
-        *self = *self - other;
-    }
-}
-
 // Instant + Duration = Instant
 // We have limited this to use same numerator and denominator in both left and right hand sides,
 // this allows for the extension traits to work. For usage with different fraction, use
 // `checked_add_duration`.
-impl<Numer: Unsigned, Denom: Unsigned + NonZero> ops::Add<Duration<u32, Numer, Denom>>
-    for Instant<u64, Numer, Denom>
+impl<Numer, Denom> ops::Add<Duration<u32, Numer, Denom>> for Instant<u64, Numer, Denom>
+where
+    Numer: Unsigned,
+    Denom: Unsigned + NonZero,
 {
     type Output = Instant<u64, Numer, Denom>;
 
@@ -407,19 +155,6 @@ impl<Numer: Unsigned, Denom: Unsigned + NonZero> ops::Add<Duration<u32, Numer, D
         } else {
             panic!("Add failed! Overflow");
         }
-    }
-}
-
-// Instant += Duration
-// We have limited this to use same numerator and denominator in both left and right hand sides,
-// this allows for the extension traits to work. For usage with different fraction, use
-// `checked_add_duration`.
-impl<Numer: Unsigned, Denom: Unsigned + NonZero> ops::AddAssign<Duration<u32, Numer, Denom>>
-    for Instant<u64, Numer, Denom>
-{
-    #[inline]
-    fn add_assign(&mut self, other: Duration<u32, Numer, Denom>) {
-        *self = *self + other;
     }
 }
 

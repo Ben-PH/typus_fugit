@@ -69,6 +69,7 @@ pub use typenum;
 
 #[cfg(test)]
 mod test {
+    use num_traits::PrimInt;
     use typenum::op;
     use typenum::U1;
     use typenum::U100;
@@ -105,7 +106,7 @@ mod test {
         );
     }
 
-    fn take_ms<T>(d: Duration<T, U1, U1000>) -> crate::aliases::MillisDuration<T> {
+    fn take_ms<T: PrimInt>(d: Duration<T, U1, U1000>) -> crate::aliases::MillisDuration<T> {
         d
     }
 
